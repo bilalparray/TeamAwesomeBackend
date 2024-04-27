@@ -3,12 +3,14 @@ const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const path = require("path");
 const app = express();
-const port = 3000;
-const MONGODB_URI =
-  "mongodb+srv://sorieasal:sorieasal@nodejs.3k8ji4v.mongodb.net/TeamAwesomeBackend";
+const port = process.env.PORT || 3000;
+require("dotenv").config({
+  path: path.join(__dirname, "process.env"),
+});
+console.log(process.env.MONGODB_URI);
 
 // MongoDB Connection
-mongoose.connect(MONGODB_URI);
+mongoose.connect(process.env.MONGODB_URI);
 
 // Schema and Model
 const playerSchema = new mongoose.Schema({
