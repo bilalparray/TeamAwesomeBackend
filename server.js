@@ -20,6 +20,7 @@ const playerSchema = new mongoose.Schema({
   battingstyle: String,
   bowlingstyle: String,
   debut: Date,
+  image: String,
   runs: [String],
   balls: [String],
   wickets: [String],
@@ -74,6 +75,7 @@ app.get("/api/players", async (req, res) => {
         battingstyle: 1,
         bowlingstyle: 1,
         debut: 1,
+        image: 1,
         runs: 1,
         balls: 1,
         wickets: 1,
@@ -126,8 +128,16 @@ app.put("/api/data/:playerId", async (req, res) => {
 
 app.post("/api/data", async (req, res) => {
   try {
-    const { name, role, born, birthplace, battingstyle, bowlingstyle, debut } =
-      req.body;
+    const {
+      name,
+      role,
+      born,
+      birthplace,
+      battingstyle,
+      bowlingstyle,
+      debut,
+      image,
+    } = req.body;
     // Create new player with empty arrays for statistics
     const newPlayer = new Player({
       name: name,
@@ -137,6 +147,7 @@ app.post("/api/data", async (req, res) => {
       battingstyle: battingstyle,
       bowlingstyle: bowlingstyle,
       debut: debut,
+      image: image,
       runs: [],
       balls: [],
       wickets: [],

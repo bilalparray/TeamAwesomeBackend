@@ -44,6 +44,9 @@
       <label for="debut">Player Debut</label>
       <input type="date" name="debut" id="debut" /><br /><br />
 
+      <label for="image">Player image</label>
+      <input type="text" name="image" id="image" /><br /><br />
+
       <button type="submit">Save Data</button>
     </form>
 
@@ -63,9 +66,11 @@
             battingstyle: formData.get("battingstyle"),
             bowlingstyle: formData.get("bowlingstyle"),
             debut: formData.get("debut"),
+            image: formData.get("image"),
+
             // Omitting other fields to initialize them as empty arrays on the server side
           };
-
+          console.log(requestData);
           try {
             const response = await fetch("http://localhost:3000/api/data", {
               method: "POST",
