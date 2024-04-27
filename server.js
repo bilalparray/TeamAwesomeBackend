@@ -7,7 +7,7 @@ const port = process.env.PORT || 3000;
 require("dotenv").config({
   path: path.join(__dirname, "process.env"),
 });
-console.log(process.env.MONGODB_URI);
+const cors = require("cors");
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI);
@@ -38,6 +38,8 @@ const playerSchema = new mongoose.Schema({
 });
 
 const Player = mongoose.model("Player", playerSchema);
+// Enable CORS
+app.use(cors());
 
 // Middleware
 app.use(bodyParser.json());
