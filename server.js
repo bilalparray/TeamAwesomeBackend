@@ -25,6 +25,10 @@ const playerSchema = new mongoose.Schema({
   wickets: [String],
   lastfour: [String],
   innings: [String],
+  careerBalls: [String],
+  careerRuns: [String],
+  careerWickets: [String],
+  careerInnings: [String],
 });
 
 const Player = mongoose.model("Player", playerSchema);
@@ -75,6 +79,10 @@ app.get("/api/players", async (req, res) => {
         wickets: 1,
         lastfour: 1,
         innings: 1,
+        careerBalls: 1,
+        careerRuns: 1,
+        careerWickets: 1,
+        careerInnings: 1,
       }
     );
     res.status(200).json(players);
@@ -102,6 +110,10 @@ app.put("/api/data/:playerId", async (req, res) => {
     if (wickets) player.wickets.push(...wickets);
     if (lastfour) player.lastfour.push(...lastfour);
     if (innings) player.innings.push(...innings);
+    if (runs) player.careerRuns.push(...runs);
+    if (balls) player.careerBalls.push(...balls);
+    if (wickets) player.careerWickets.push(...wickets);
+    if (innings) player.careerInnings.push(...innings);
 
     await player.save();
 
@@ -130,6 +142,10 @@ app.post("/api/data", async (req, res) => {
       wickets: [],
       lastfour: [],
       innings: [],
+      careerBalls: [],
+      careerRuns: [],
+      careerWickets: [],
+      careerInnings: [],
     });
 
     // Save the new player
