@@ -2,7 +2,6 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const path = require("path");
-const { log } = require("console");
 const app = express();
 const port = 3000;
 const MONGODB_URI =
@@ -21,15 +20,19 @@ const playerSchema = new mongoose.Schema({
   bowlingstyle: String,
   debut: Date,
   image: String,
-  runs: [String],
-  balls: [String],
-  wickets: [String],
-  lastfour: [String],
-  innings: [String],
-  careerBalls: [String],
-  careerRuns: [String],
-  careerWickets: [String],
-  careerInnings: [String],
+  scores: {
+    runs: [String],
+    balls: [String],
+    wickets: [String],
+    lastfour: [String],
+    innings: [String],
+    career: {
+      balls: [String],
+      runs: [String],
+      wickets: [String],
+      innings: [String],
+    },
+  },
 });
 
 const Player = mongoose.model("Player", playerSchema);
@@ -76,15 +79,7 @@ app.get("/api/players", async (req, res) => {
         bowlingstyle: 1,
         debut: 1,
         image: 1,
-        runs: 1,
-        balls: 1,
-        wickets: 1,
-        lastfour: 1,
-        innings: 1,
-        careerBalls: 1,
-        careerRuns: 1,
-        careerWickets: 1,
-        careerInnings: 1,
+        scores: 1,
       }
     );
     res.status(200).json(players);
@@ -107,15 +102,15 @@ app.put("/api/data/:playerId", async (req, res) => {
     }
 
     // Append new elements to existing arrays
-    if (runs) player.runs.push(...runs);
-    if (balls) player.balls.push(...balls);
-    if (wickets) player.wickets.push(...wickets);
-    if (lastfour) player.lastfour.push(...lastfour);
-    if (innings) player.innings.push(...innings);
-    if (runs) player.careerRuns.push(...runs);
-    if (balls) player.careerBalls.push(...balls);
-    if (wickets) player.careerWickets.push(...wickets);
-    if (innings) player.careerInnings.push(...innings);
+    if (runs) player.scores.runs.push(...runs);
+    if (balls) player.scores.balls.push(...balls);
+    if (wickets) player.scores.wickets.push(...wickets);
+    if (lastfour) player.scores.lastfour.push(...lastfour);
+    if (innings) player.scores.innings.push(...innings);
+    if (runs) player.scores.career.runs.push(...runs);
+    if (balls) player.scores.career.balls.push(...balls);
+    if (wickets) player.scores.career.wickets.push(...wickets);
+    if (innings) player.scores.career.innings.push(...innings);
 
     await player.save();
 
@@ -148,15 +143,19 @@ app.post("/api/data", async (req, res) => {
       bowlingstyle: bowlingstyle,
       debut: debut,
       image: image,
-      runs: [],
-      balls: [],
-      wickets: [],
-      lastfour: [],
-      innings: [],
-      careerBalls: [],
-      careerRuns: [],
-      careerWickets: [],
-      careerInnings: [],
+      scores: {
+        runs: [],
+        balls: [],
+        wickets: [],
+        lastfour: [],
+        innings: [],
+        career: {
+          balls: [],
+          runs: [],
+          wickets: [],
+          innings: [],
+        },
+      },
     });
 
     // Save the new player
@@ -168,14 +167,7 @@ app.post("/api/data", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
-app.get("/api/data/:playerId", (req, res) => {
-  Player.find({}, (err, players) => {
-    if (err) {
-      res.send(err);
-    }
-    res.json(players);
-  });
-});
+
 // Start server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
