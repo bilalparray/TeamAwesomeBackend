@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Update Player Details</title>
+  </head>
+  <body>
+    <h1>Update Player Details</h1>
+    <form id="updateForm">
+      <label for="playerSelect">Select Player:</label>
+      <select id="playerSelect" name="playerId">
+        <!-- Dropdown options will be populated dynamically --></select
+      ><br /><br />
+      <label for="runs">Runs</label>
+      <input type="text" id="runs" name="runs" required /><br /><br />
+      <label for="balls">Balls</label>
+      <input type="text" id="balls" name="balls" required /><br /><br />
+      <label for="wickets">Wickets</label>
+      <input type="text" id="wickets" name="wickets" required /><br /><br />
+      <label for="lastfour">Last Four</label>
+      <input type="text" id="lastfour" name="lastfour" required /><br /><br />
+
+      <label for="innings">Innings Runs</label>
+      <input type="text" id="innings" name="innings" required /><br /><br />
+      <button type="submit">Update Data</button>
+    </form>
+
+    <script>
+      // Function to fetch players and populate dropdown
+      async function fetchPlayers() {
+        try {
+          const response = await fetch("http://localhost:3000/api/players");
+          if (!response.ok) {
+            throw new Error("Failed to fetch players");
+          }
+          const players = await response.json();
+
+          const playerSelect = document.getElementById("playerSelect");
+          players.forEach((player) => {
+            const option = document.createElement("option");
+            option.value = player._id;
+            option.textContent = player.name;
+            playerSelect.appendChild(option);
+          });
+        } catch (error) {
+          console.error(error);
+          alert("An error occurred while fetching players");
+        }
+      }
+
+      // Function to fetch player details and fill form when player selected
+      async function fetchPlayerDetails(playerId) {
+        try {
+          const response = await fetch(
+            `http://localhost:3000/api/data/${playerId}`
+          );
+          if (!response.ok) {
+            throw new Error(
+              `Failed to fetch player details: ${response.status}`
+            );
+          }
+          const playerData = await response.json();
+        } catch (error) {
+          console.error(error);
+          alert("An error occurred while fetching player details");
+        }
+      }
+
+      // Add event listener for dropdown change
+      document
+        .getElementById("playerSelect")
+        .addEventListener("change", function () {
+          const selectedPlayerId = this.value;
+          fetchPlayerDetails(selectedPlayerId);
+        });
+
+      // Add event listener for form submission
+      document
+        .getElementById("updateForm")
+        .addEventListener("submit", async function (event) {
+          event.preventDefault();
+
+          const formData = new FormData(this);
+          const playerId = formData.get("playerId");
+
+          const requestData = {
+            runs: formData.get("runs").split(","),
+            balls: formData.get("balls").split(","),
+            wickets: formData.get("wickets").split(","),
+            lastfour: formData.get("lastfour").split(","),
+            innings: formData.get("innings").split(","),
+          };
+          console.log(requestData);
+          try {
+            const response = await fetch(
+              `http://localhost:3000/api/data/${playerId}`,
+              {
+                method: "PUT",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(requestData),
+              }
+            );
+
+            if (!response.ok) {
+              throw new Error("Failed to update data");
+            }
+
+            alert("Data updated successfully!");
+            this.reset();
+          } catch (error) {
+            console.error(error);
+            alert("An error occurred while updating data");
+          }
+        });
+
+      // Fetch players when page loads
+      fetchPlayers();
+    </script>
+  </body>
+</html>

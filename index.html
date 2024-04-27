@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Add Data</title>
+  </head>
+  <body>
+    <h1>Add Data</h1>
+    <form id="dataForm">
+      <label for="name">Player Name</label>
+      <input type="text" name="name" id="name" required /><br /><br />
+
+      <label for="role">Player Role</label>
+      <input type="text" name="role" id="role" required /><br /><br />
+
+      <label for="born">Player Born</label>
+      <input type="date" name="born" id="born" /><br /><br />
+
+      <label for="birthplace">Player Birth Place</label>
+      <input
+        type="text"
+        name="birthplace"
+        id="birthplace"
+        required
+      /><br /><br />
+
+      <label for="battingstyle">Player Batting Style</label>
+      <input
+        type="text"
+        name="battingstyle"
+        id="battingstyle"
+        required
+      /><br /><br />
+
+      <label for="bowling-style">Player Bowling Style</label>
+      <input
+        type="text"
+        name="bowlingstyle"
+        id="bowlingstyle"
+        required
+      /><br /><br />
+
+      <label for="debut">Player Debut</label>
+      <input type="date" name="debut" id="debut" /><br /><br />
+
+      <button type="submit">Save Data</button>
+    </form>
+
+    <script>
+      document
+        .getElementById("dataForm")
+        .addEventListener("submit", async function (event) {
+          event.preventDefault();
+
+          const formData = new FormData(this);
+
+          const requestData = {
+            name: formData.get("name"),
+            role: formData.get("role"),
+            born: formData.get("born"),
+            birthplace: formData.get("birthplace"),
+            battingstyle: formData.get("battingstyle"),
+            bowlingstyle: formData.get("bowlingstyle"),
+            debut: formData.get("debut"),
+            // Omitting other fields to initialize them as empty arrays on the server side
+          };
+
+          try {
+            const response = await fetch("http://localhost:3000/api/data", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(requestData),
+            });
+            if (!response.ok) {
+              throw new Error("Failed to save data");
+            }
+
+            alert("Player added successfully!");
+
+            this.reset();
+          } catch (error) {
+            console.error(error);
+            alert("An error occurred while adding player");
+          }
+        });
+    </script>
+  </body>
+</html>
