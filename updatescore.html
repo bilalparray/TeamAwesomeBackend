@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Update Player Details</title>
+  <title>Update Player Score</title>
   <!-- Bootstrap CSS -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
 </head>
@@ -13,44 +13,58 @@
     <div class="row">
       <div class="col-md-6">
         <form id="updateForm">
-          <div class="mb-3">
+<div class="row">
+  <div class="col-6"><div class="mb-3">
             <label for="playerSelect" class="form-label">Select Player:</label>
             <select id="playerSelect" name="playerId" class="form-select">
               <!-- Dropdown options will be populated dynamically -->
             </select>
-          </div>
-
-          <div class="mb-3">
+          </div></div>
+  <div class="col-6"> <div class="mb-3">
             <label for="runs" class="form-label">Runs</label>
-            <input type="text" id="runs" name="runs" class="form-control" required>
-          </div>
-
+            <input type="number" id="runs" name="runs" class="form-control" required placeholder="43">
+          </div></div>
+</div>
+<div class="row">
+  <div class="col-6">
           <div class="mb-3">
             <label for="balls" class="form-label">Balls</label>
-            <input type="text" id="balls" name="balls" class="form-control" required>
-          </div>
-
-          <div class="mb-3">
+            <input type="number" id="balls" name="balls" class="form-control" required placeholder="34">
+          </div></div>
+  <div class="col-6"> <div class="mb-3">
             <label for="wickets" class="form-label">Wickets</label>
-            <input type="text" id="wickets" name="wickets" class="form-control" required>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="mb-3">
+            <input type="number" id="wickets" name="wickets" class="form-control" required placeholder="43">
+          </div></div>
+</div>
+<div class="row">
+  <div class="col-6"> <div class="mb-3">
             <label for="lastfour" class="form-label">Last Four</label>
-            <input type="text" id="lastfour" name="lastfour" class="form-control" required>
-          </div>
-
-          <div class="mb-3">
+            <input type="number" id="lastfour" name="lastfour" class="form-control" required placeholder="43">
+          </div></div>
+  <div class="col-6"> <div class="mb-3">
             <label for="innings" class="form-label">Innings Runs</label>
-            <input type="text" id="innings" name="innings" class="form-control" required>
-          </div>
+            <input type="number" id="innings" name="innings" class="form-control" required placeholder="43">
+          </div></div>
+</div>
+
+
+          
+
+         
+
+
+         
+       
+        
+         
+
+         
 
           <button type="submit" class="btn btn-primary">Update Data</button>
         </form>
       </div>
     </div>
-  </div>
+ 
 
   <!-- Bootstrap JS (optional if you're not using Bootstrap's JavaScript components) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
@@ -94,7 +108,6 @@
         }
         const playerData = await response.json();
       } catch (error) {
-        console.error(error);
         showAlert("error", "An error occurred while fetching player details");
       }
     }
@@ -137,10 +150,12 @@
 
           if (!response.ok) {
             throw new Error("Failed to update data");
+          }else{
+          showAlert("success", "Data updated successfully!");
+            this.reset();
           }
 
-          showAlert("success", "Data updated successfully!");
-          this.reset();
+          
         } catch (error) {
           showAlert("error", "An error occurred while updating data");
         }
