@@ -4,51 +4,103 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Add Data</title>
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
   </head>
   <body>
-    <h1>Add Data</h1>
-    <form id="dataForm">
-      <label for="name">Player Name</label>
-      <input type="text" name="name" id="name" required /><br /><br />
+    <div class="container">
+      <h1 class="my-4">Add Data</h1>
+      <form id="dataForm">
+        <div class="mb-3">
+          <label for="name" class="form-label">Player Name</label>
+          <input
+            type="text"
+            class="form-control"
+            name="name"
+            id="name"
+            required
+          />
+        </div>
 
-      <label for="role">Player Role</label>
-      <input type="text" name="role" id="role" required /><br /><br />
+        <div class="mb-3">
+          <label for="role" class="form-label">Player Role</label>
+          <input
+            type="text"
+            class="form-control"
+            name="role"
+            id="role"
+            required
+          />
+        </div>
 
-      <label for="born">Player Born</label>
-      <input type="date" name="born" id="born" /><br /><br />
+        <div class="mb-3">
+          <label for="born" class="form-label">Player Born</label>
+          <input type="date" class="form-control" name="born" id="born" />
+        </div>
 
-      <label for="birthplace">Player Birth Place</label>
-      <input
-        type="text"
-        name="birthplace"
-        id="birthplace"
-        required
-      /><br /><br />
+        <div class="mb-3">
+          <label for="birthplace" class="form-label">Player Birth Place</label>
+          <input
+            type="text"
+            class="form-control"
+            name="birthplace"
+            id="birthplace"
+            required
+          />
+        </div>
 
-      <label for="battingstyle">Player Batting Style</label>
-      <input
-        type="text"
-        name="battingstyle"
-        id="battingstyle"
-        required
-      /><br /><br />
+        <div class="mb-3">
+          <label for="battingstyle" class="form-label"
+            >Player Batting Style</label
+          >
+          <input
+            type="text"
+            class="form-control"
+            name="battingstyle"
+            id="battingstyle"
+            required
+          />
+        </div>
 
-      <label for="bowling-style">Player Bowling Style</label>
-      <input
-        type="text"
-        name="bowlingstyle"
-        id="bowlingstyle"
-        required
-      /><br /><br />
+        <div class="mb-3">
+          <label for="bowlingstyle" class="form-label"
+            >Player Bowling Style</label
+          >
+          <input
+            type="text"
+            class="form-control"
+            name="bowlingstyle"
+            id="bowlingstyle"
+            required
+          />
+        </div>
 
-      <label for="debut">Player Debut</label>
-      <input type="date" name="debut" id="debut" /><br /><br />
+        <div class="mb-3">
+          <label for="debut" class="form-label">Player Debut</label>
+          <input type="date" class="form-control" name="debut" id="debut" />
+        </div>
 
-      <label for="image">Player image</label>
-      <input type="text" name="image" id="image" /><br /><br />
+        <div class="mb-3">
+          <label for="image" class="form-label">Player Image</label>
+          <input
+            type="file"
+            class="form-control"
+            name="image"
+            id="image"
+            accept="image/*"
+          />
+        </div>
 
-      <button type="submit">Save Data</button>
-    </form>
+        <button type="submit" class="btn btn-primary">Save Data</button>
+        <a type="button" class="btn btn-primary" href="/update">Update Runs</a>
+      </form>
+    </div>
+
+    <!-- Bootstrap JS (optional if you're not using Bootstrap's JavaScript components) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 
     <script>
       document
@@ -58,6 +110,10 @@
 
           const formData = new FormData(this);
 
+          // Convert image to base64
+          const imageFile = formData.get("image");
+          const base64Image = await convertToBase64(imageFile);
+
           const requestData = {
             name: formData.get("name"),
             role: formData.get("role"),
@@ -66,9 +122,7 @@
             battingstyle: formData.get("battingstyle"),
             bowlingstyle: formData.get("bowlingstyle"),
             debut: formData.get("debut"),
-            image: formData.get("image"),
-
-            // Omitting other fields to initialize them as empty arrays on the server side
+            image: base64Image,
           };
           console.log(requestData);
           try {
@@ -94,6 +148,15 @@
             alert("An error occurred while adding player");
           }
         });
+
+      function convertToBase64(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => resolve(reader.result.split(",")[1]);
+          reader.onerror = (error) => reject(error);
+        });
+      }
     </script>
   </body>
 </html>
