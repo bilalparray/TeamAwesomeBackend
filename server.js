@@ -54,21 +54,45 @@ app.get("/update", (req, res) => {
 // Routes
 
 // Get data for a player by ID
+// app.get("/api/data/:playerId", async (req, res) => {
+//   try {
+//     const playerId = req.params.playerId;
+//     const player = await Player.findById(playerId);
+//     if (!player) {
+//       res.status(404).json({ message: "Player not found" });
+//       return;
+//     }
+//     res.status(200).json(player);
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: "Internal server error" });
+//   }
+// });
 app.get("/api/data/:playerId", async (req, res) => {
   try {
     const playerId = req.params.playerId;
-    const player = await Player.findById(playerId);
+    const player = await Player.findById(playerId).lean(); // Use .lean() for plain JavaScript object
+
     if (!player) {
-      res.status(404).json({ message: "Player not found" });
-      return;
+      return res.status(404).json({ message: "Player not found" });
     }
+
+    // Compress image if available
+    if (player.image) {
+      const compressedImage = await compressImage(
+        Buffer.from(player.image, "base64")
+      );
+      player.image = compressedImage || null; // Update player object with compressed image
+    } else {
+      player.image = null; // Handle case where image is null or empty
+    }
+
     res.status(200).json(player);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
-
 // Add a route to fetch all player names
 // app.get("/api/players", async (req, res) => {
 //   try {
