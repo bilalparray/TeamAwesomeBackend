@@ -2,6 +2,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const path = require("path");
+const sharp = require("sharp");
 const app = express();
 const port = process.env.PORT || 3000;
 require("dotenv").config({
@@ -69,6 +70,46 @@ app.get("/api/data/:playerId", async (req, res) => {
 });
 
 // Add a route to fetch all player names
+// app.get("/api/players", async (req, res) => {
+//   try {
+//     const players = await Player.find(
+//       {},
+//       {
+//         _id: 1,
+//         name: 1,
+//         birthplace: 1,
+//         born: 1,
+//         role: 1,
+//         battingstyle: 1,
+//         bowlingstyle: 1,
+//         debut: 1,
+//         image: 1,
+//         scores: 1,
+//       }
+//     );
+//     res.status(200).json(players);
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: "Internal server error" });
+//   }
+// });
+const compressImage = async (imageBuffer) => {
+  try {
+    if (!imageBuffer || imageBuffer.length === 0) {
+      throw new Error("Empty or undefined image buffer");
+    }
+
+    const resizedImageBuffer = await sharp(imageBuffer)
+      .resize({ height: 300, width: 300 })
+      .toBuffer();
+
+    const base64Image = resizedImageBuffer.toString("base64");
+    return base64Image;
+  } catch (error) {
+    console.error("Error compressing image:", error.message);
+    return null; // Return null if there's an error with image processing
+  }
+};
 app.get("/api/players", async (req, res) => {
   try {
     const players = await Player.find(
@@ -86,13 +127,27 @@ app.get("/api/players", async (req, res) => {
         scores: 1,
       }
     );
-    res.status(200).json(players);
+
+    // Map players and compress image if available
+    const playersWithCompressedImages = await Promise.all(
+      players.map(async (player) => {
+        if (player.image) {
+          const compressedImage = await compressImage(
+            Buffer.from(player.image, "base64")
+          );
+          return { ...player.toObject(), image: compressedImage };
+        } else {
+          return { ...player.toObject(), image: null }; // Handle case where image is null or empty
+        }
+      })
+    );
+
+    res.status(200).json(playersWithCompressedImages);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
-
 // Modify the route to handle updates by ID
 app.put("/api/data/:playerId", async (req, res) => {
   try {
