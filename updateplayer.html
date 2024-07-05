@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Update Player Details</title>
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      .loader-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        z-index: 9999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .spinner-border {
+        width: 4rem;
+        height: 4rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1 class="my-4">Update Player Details</h1>
+      <div class="row">
+        <div class="col-md-6">
+          <form id="updateForm">
+            <div class="row">
+              <div class="col-6">
+                <div class="mb-3">
+                  <label for="playerSelect" class="form-label"
+                    >Select Player:</label
+                  >
+                  <select id="playerSelect" name="playerId" class="form-select">
+                    <!-- Dropdown options will be populated dynamically -->
+                  </select>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="mb-3">
+                  <label for="name" class="form-label">Player Name</label>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    class="form-control"
+                    placeholder="Enter player name"
+                  />
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-6">
+                <div class="mb-3">
+                  <label for="role" class="form-label">Player Role</label>
+                  <input
+                    type="text"
+                    id="role"
+                    name="role"
+                    class="form-control"
+                    placeholder="Enter player role"
+                  />
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="mb-3">
+                  <label for="born" class="form-label">Player Born</label>
+                  <input
+                    type="date"
+                    id="born"
+                    name="born"
+                    class="form-control"
+                  />
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-6">
+                <div class="mb-3">
+                  <label for="birthplace" class="form-label"
+                    >Player Birth Place</label
+                  >
+                  <input
+                    type="text"
+                    id="birthplace"
+                    name="birthplace"
+                    class="form-control"
+                    placeholder="Enter birth place"
+                  />
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="mb-3">
+                  <label for="battingstyle" class="form-label"
+                    >Player Batting Style</label
+                  >
+                  <input
+                    type="text"
+                    id="battingstyle"
+                    name="battingstyle"
+                    class="form-control"
+                    placeholder="Enter batting style"
+                  />
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-6">
+                <div class="mb-3">
+                  <label for="bowlingstyle" class="form-label"
+                    >Player Bowling Style</label
+                  >
+                  <input
+                    type="text"
+                    id="bowlingstyle"
+                    name="bowlingstyle"
+                    class="form-control"
+                    placeholder="Enter bowling style"
+                  />
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="mb-3">
+                  <label for="debut" class="form-label">Player Debut</label>
+                  <input
+                    type="date"
+                    id="debut"
+                    name="debut"
+                    class="form-control"
+                  />
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-6">
+                <div class="mb-3">
+                  <label for="image" class="form-label">Player Image</label>
+                  <input
+                    type="file"
+                    id="image"
+                    name="image"
+                    class="form-control"
+                    accept="image/*"
+                  />
+                </div>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Data</button>
+          </form>
+        </div>
+      </div>
+      <!-- Loader -->
+      <div id="loader" class="loader-overlay d-none">
+        <div class="spinner-border" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS (optional if you're not using Bootstrap's JavaScript components) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <!-- SweetAlert JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+      const loader = document.getElementById("loader");
+
+      function showLoader() {
+        loader.classList.remove("d-none");
+      }
+
+      function hideLoader() {
+        loader.classList.add("d-none");
+      }
+
+      // Function to fetch players and populate dropdown
+      async function fetchPlayers() {
+        showLoader();
+        try {
+          const response = await fetch(
+            "https://teamawesomebackend.onrender.com/api/players"
+          );
+          if (!response.ok) {
+            throw new Error("Failed to fetch players");
+          }
+          const players = await response.json();
+
+          const playerSelect = document.getElementById("playerSelect");
+          players.forEach((player) => {
+            const option = document.createElement("option");
+            option.value = player._id;
+            option.textContent = player.name;
+            playerSelect.appendChild(option);
+          });
+        } catch (error) {
+          showAlert("error", "An error occurred while fetching players");
+        } finally {
+          hideLoader();
+        }
+      }
+
+      // Function to fetch player details and fill form when player selected
+      async function fetchPlayerDetails(playerId) {
+        showLoader();
+        try {
+          const response = await fetch(
+            `https://teamawesomebackend.onrender.com/api/data/${playerId}`
+          );
+          if (!response.ok) {
+            throw new Error(
+              `Failed to fetch player details: ${response.status}`
+            );
+          }
+          const playerData = await response.json();
+          // Populate form fields with playerData
+          document.getElementById("name").value = playerData.name;
+          document.getElementById("role").value = playerData.role;
+          document.getElementById("born").value = playerData.born;
+          document.getElementById("birthplace").value = playerData.birthplace;
+          document.getElementById("battingstyle").value =
+            playerData.battingstyle;
+          document.getElementById("bowlingstyle").value =
+            playerData.bowlingstyle;
+          document.getElementById("debut").value = playerData.debut;
+        } catch (error) {
+          showAlert("error", "An error occurred while fetching player details");
+        } finally {
+          hideLoader();
+        }
+      }
+
+      // Add event listener for dropdown change
+      document
+        .getElementById("playerSelect")
+        .addEventListener("change", function () {
+          const selectedPlayerId = this.value;
+          fetchPlayerDetails(selectedPlayerId);
+        });
+
+      // Add event listener for form submission
+      document
+        .getElementById("updateForm")
+        .addEventListener("submit", async function (event) {
+          event.preventDefault();
+
+          const formData = new FormData(this);
+          const playerId = formData.get("playerId");
+
+          const imageFile = formData.get("image");
+          const base64Image = imageFile
+            ? await convertToBase64(imageFile)
+            : null;
+
+          const requestData = {
+            name: formData.get("name"),
+            role: formData.get("role"),
+            born: formData.get("born"),
+            birthplace: formData.get("birthplace"),
+            battingstyle: formData.get("battingstyle"),
+            bowlingstyle: formData.get("bowlingstyle"),
+            debut: formData.get("debut"),
+            image: base64Image,
+          };
+
+          // Display confirmation dialog
+          const confirmResult = await Swal.fire({
+            title: "Confirm Update",
+            html: `
+        <p>You are about to update the following data:</p>
+        <ul>
+          <li><strong>Name:</strong> ${requestData.name}</li>
+          <li><strong>Role:</strong> ${requestData.role}</li>
+          <li><strong>Born:</strong> ${requestData.born}</li>
+          <li><strong>Birthplace:</strong> ${requestData.birthplace}</li>
+          <li><strong>Batting Style:</strong> ${requestData.battingstyle}</li>
+          <li><strong>Bowling Style:</strong> ${requestData.bowlingstyle}</li>
+          <li><strong>Debut:</strong> ${requestData.debut}</li>
+        </ul>
+        <p>Are you sure you want to proceed?</p>`,
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "Update",
+            cancelButtonText: "Cancel",
+          });
+
+          if (confirmResult.isConfirmed) {
+            showLoader();
+            try {
+              const response = await fetch(
+                `https://teamawesomebackend.onrender.com/api/update/${playerId}`,
+                {
+                  method: "PUT",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify(requestData),
+                }
+              );
+
+              if (!response.ok) {
+                throw new Error("Failed to update data");
+              } else {
+                showAlert("success", "Data updated successfully!");
+                this.reset();
+              }
+            } catch (error) {
+              showAlert("error", "An error occurred while updating data");
+            } finally {
+              hideLoader();
+            }
+          }
+        });
+
+      // Function to convert image file to base64
+      function convertToBase64(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = (error) => reject(error);
+          reader.readAsDataURL(file);
+        });
+      }
+
+      // Function to show SweetAlert
+      function showAlert(icon, message) {
+        Swal.fire({
+          position: "center",
+          icon: icon,
+          title: message,
+          showConfirmButton: false,
+          timer: 1500,
+        });
+      }
+
+      // Fetch players when page loads
+      fetchPlayers();
+    </script>
+  </body>
+</html>

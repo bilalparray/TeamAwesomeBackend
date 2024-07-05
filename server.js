@@ -50,6 +50,9 @@ app.get("/", (req, res) => {
 app.get("/update", (req, res) => {
   res.sendFile(path.join(__dirname, "updatescore.html"));
 });
+app.get("/updateplayer", (req, res) => {
+  res.sendFile(path.join(__dirname, "updateplayer.html"));
+});
 
 // Routes
 
@@ -172,7 +175,8 @@ app.get("/api/players", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
-// Modify the route to handle updates by ID
+
+//update player score
 app.put("/api/data/:playerId", async (req, res) => {
   try {
     const playerId = req.params.playerId;
@@ -251,6 +255,45 @@ app.post("/api/data", async (req, res) => {
   }
 });
 
+///update player details
+app.put("/api/update/:playerId", async (req, res) => {
+  try {
+    const playerId = req.params.playerId;
+    const {
+      name,
+      role,
+      born,
+      birthplace,
+      battingstyle,
+      bowlingstyle,
+      debut,
+      image,
+    } = req.body;
+
+    let player = await Player.findById(playerId);
+
+    if (!player) {
+      return res.status(404).json({ message: "Player not found" });
+    }
+
+    // Update specific fields
+    if (name) player.name = name;
+    if (role) player.role = role;
+    if (born) player.born = born;
+    if (birthplace) player.birthplace = birthplace;
+    if (battingstyle) player.battingstyle = battingstyle;
+    if (bowlingstyle) player.bowlingstyle = bowlingstyle;
+    if (debut) player.debut = debut;
+    if (image) player.image = image;
+
+    await player.save();
+
+    res.status(200).json({ message: "Player details updated successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
 // Start server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
