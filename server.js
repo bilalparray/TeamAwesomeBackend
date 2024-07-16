@@ -9,7 +9,9 @@ require("dotenv").config({
   path: path.join(__dirname, "process.env"),
 });
 const cors = require("cors");
-
+// Increase the request body size limit
+app.use(bodyParser.json({ limit: "500kb" }));
+app.use(bodyParser.urlencoded({ limit: "500kb", extended: true }));
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI);
 
@@ -44,7 +46,7 @@ const Player = mongoose.model("Player", playerSchema);
 app.use(cors());
 app.use(express.static(path.join(__dirname, "public")));
 // Middleware
-app.use(bodyParser.json());
+// app.use(bodyParser.json());
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
@@ -373,6 +375,34 @@ app.get("/api/mom", async (req, res) => {
     res.status(200).json(response);
   } catch (error) {
     console.error("Error fetching MOTM:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Update player image route
+app.put("/api/players/image", async (req, res) => {
+  try {
+    const { image, _id } = req.body.reqData || {}; // Using optional chaining and default object for safety
+
+    if (!image || !_id) {
+      return res.status(400).json({ message: "Invalid request format" });
+    }
+
+    const player = await Player.findById(_id);
+
+    if (!player) {
+      return res.status(404).json({ message: "Player not found" });
+    }
+
+    // Update only the image field
+    player.image = image;
+
+    // Save the updated player
+    await player.save();
+
+    res.json({ message: "Player image updated successfully", player });
+  } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
