@@ -310,6 +310,62 @@ app.get("/api/updateapp", async (req, res) => {
     res.status(500).send("Error retrieving update information.");
   }
 });
+// man of the match
+app.get("/api/mom", async (req, res) => {
+  try {
+    const players = await Player.find({});
+
+    let motmPlayer = null;
+    let highestScore = 0;
+
+    players.forEach((player) => {
+      let playerScore = 0;
+
+      // Get the last run entry if it exists
+      const lastRun = player.scores.runs.slice(-1)[0];
+      if (lastRun) {
+        playerScore += parseInt(lastRun, 10);
+      }
+
+      // Get the last wicket entry if it exists
+      const lastWicket = player.scores.wickets.slice(-1)[0];
+      if (lastWicket) {
+        playerScore += 10 * parseInt(lastWicket, 10);
+      }
+
+      if (playerScore > highestScore) {
+        highestScore = playerScore;
+        motmPlayer = player;
+      }
+    });
+
+    if (!motmPlayer) {
+      return res.status(404).json({ message: "No players found" });
+    }
+
+    // Compress image if it exists
+    let compressedImage = null;
+    if (motmPlayer.image) {
+      compressedImage = await compressImage(
+        Buffer.from(motmPlayer.image, "base64")
+      );
+    }
+
+    // Create the response object with only the required fields
+    const response = {
+      _id: motmPlayer._id,
+      name: motmPlayer.name,
+      runs: motmPlayer.scores.runs.slice(-1)[0],
+      wickets: motmPlayer.scores.wickets.slice(-1)[0],
+      image: compressedImage || null,
+    };
+
+    res.status(200).json(response);
+  } catch (error) {
+    console.error("Error fetching MOTM:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
 
 // Start server
 app.listen(port, () => {
