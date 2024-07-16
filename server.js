@@ -360,6 +360,16 @@ app.get("/api/mom", async (req, res) => {
       image: compressedImage || null,
     };
 
+    // Create a descriptive paragraph
+    let paragraph = `${motmPlayer.name} delivered an outstanding performance. Scoring ${response.runs} runs`;
+    if (response.wickets > 0) {
+      paragraph += ` and taking ${response.wickets} wickets`;
+    }
+    paragraph += ` in the most recent match, ${motmPlayer.name} proved to be a formidable player.`;
+
+    // Include the paragraph in the response
+    response.paragraph = paragraph;
+
     res.status(200).json(response);
   } catch (error) {
     console.error("Error fetching MOTM:", error);
