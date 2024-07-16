@@ -57,20 +57,7 @@ app.get("/updateplayer", (req, res) => {
 // Routes
 
 // Get data for a player by ID
-// app.get("/api/data/:playerId", async (req, res) => {
-//   try {
-//     const playerId = req.params.playerId;
-//     const player = await Player.findById(playerId);
-//     if (!player) {
-//       res.status(404).json({ message: "Player not found" });
-//       return;
-//     }
-//     res.status(200).json(player);
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: "Internal server error" });
-//   }
-// });
+
 app.get("/api/data/:playerId", async (req, res) => {
   try {
     const playerId = req.params.playerId;
@@ -97,29 +84,7 @@ app.get("/api/data/:playerId", async (req, res) => {
   }
 });
 // Add a route to fetch all player names
-// app.get("/api/players", async (req, res) => {
-//   try {
-//     const players = await Player.find(
-//       {},
-//       {
-//         _id: 1,
-//         name: 1,
-//         birthplace: 1,
-//         born: 1,
-//         role: 1,
-//         battingstyle: 1,
-//         bowlingstyle: 1,
-//         debut: 1,
-//         image: 1,
-//         scores: 1,
-//       }
-//     );
-//     res.status(200).json(players);
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: "Internal server error" });
-//   }
-// });
+
 const compressImage = async (imageBuffer) => {
   try {
     if (!imageBuffer || imageBuffer.length === 0) {
@@ -294,6 +259,32 @@ app.put("/api/update/:playerId", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
+// app update code below
+
+// Define a schema
+const appInfoSchema = new mongoose.Schema({
+  minimumVersion: String,
+  isError: Boolean,
+});
+
+// Define a model
+const AppInfo = mongoose.model("AppInfo", appInfoSchema);
+
+// Endpoint to get the application update information
+app.get("/api/updateapp", async (req, res) => {
+  try {
+    const appInfo = await AppInfo.findOne();
+    if (appInfo) {
+      res.json(appInfo);
+    } else {
+      res.status(404).send("No update information found.");
+    }
+  } catch (error) {
+    res.status(500).send("Error retrieving update information.");
+  }
+});
+
 // Start server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
