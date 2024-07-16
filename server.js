@@ -34,6 +34,7 @@ const playerSchema = new mongoose.Schema({
       runs: [String],
       wickets: [String],
       innings: [String],
+      ranking: String,
     },
   },
 });
@@ -120,9 +121,34 @@ app.get("/api/players", async (req, res) => {
       }
     );
 
+    // Calculate average runs for each player
+    const playersWithAverages = players.map((player) => {
+      const runsArray = player.scores.career.runs || []; // Ensure runs array exists
+      const totalMatches = runsArray.length;
+      const totalRuns = runsArray.reduce((acc, score) => {
+        const runValue = parseInt(score, 10);
+        return isNaN(runValue) ? acc : acc + runValue;
+      }, 0);
+      const averageRuns = totalMatches > 0 ? totalRuns / totalMatches : 0;
+
+      return {
+        player,
+        averageRuns,
+      };
+    });
+
+    // Sort players based on average runs in descending order
+    playersWithAverages.sort((a, b) => b.averageRuns - a.averageRuns);
+
+    // Assign rankings based on sorted position
+    for (let i = 0; i < playersWithAverages.length; i++) {
+      playersWithAverages[i].player.scores.career.ranking = (i + 1).toString();
+      await playersWithAverages[i].player.save();
+    }
+
     // Map players and compress image if available
     const playersWithCompressedImages = await Promise.all(
-      players.map(async (player) => {
+      playersWithAverages.map(async ({ player }) => {
         if (player.image) {
           const compressedImage = await compressImage(
             Buffer.from(player.image, "base64")
