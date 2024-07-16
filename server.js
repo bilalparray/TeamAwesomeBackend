@@ -41,17 +41,17 @@ const playerSchema = new mongoose.Schema({
 const Player = mongoose.model("Player", playerSchema);
 // Enable CORS
 app.use(cors());
-
+app.use(express.static(path.join(__dirname, "public")));
 // Middleware
 app.use(bodyParser.json());
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 app.get("/update", (req, res) => {
-  res.sendFile(path.join(__dirname, "updatescore.html"));
+  res.sendFile(path.join(__dirname, "public", "updatescore.html"));
 });
 app.get("/updateplayer", (req, res) => {
-  res.sendFile(path.join(__dirname, "updateplayer.html"));
+  res.sendFile(path.join(__dirname, "public", "updateplayer.html"));
 });
 
 // Routes
