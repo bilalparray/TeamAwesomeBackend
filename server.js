@@ -407,6 +407,62 @@ app.put("/api/players/image", async (req, res) => {
   }
 });
 
+// batting order
+const battingOrderSchema = new mongoose.Schema({
+  order: [String], // Array of player names in batting order
+});
+
+const BattingOrder = mongoose.model("BattingOrder", battingOrderSchema);
+// Update batting order
+app.put("/api/batting-order", async (req, res) => {
+  try {
+    const { reqData } = req.body;
+    const { order } = reqData;
+
+    if (!order || !Array.isArray(order)) {
+      return res
+        .status(400)
+        .json({
+          message:
+            "Invalid request format: 'order' should be an array of strings",
+        });
+    }
+
+    // Create or update the batting order document (assuming there's only one document)
+    let battingOrder = await BattingOrder.findOne();
+
+    if (!battingOrder) {
+      battingOrder = new BattingOrder({ order });
+    } else {
+      battingOrder.order = order;
+    }
+
+    await battingOrder.save();
+
+    res.status(200).json({ message: "Batting order updated successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// GET current batting order
+app.get("/api/batting-order", async (req, res) => {
+  try {
+    // Retrieve the batting order document (assuming there's only one document)
+    const battingOrder = await BattingOrder.findOne();
+
+    if (!battingOrder) {
+      return res.status(404).json({ message: "Batting order not found" });
+    }
+
+    res.status(200).json(battingOrder);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 // Start server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
