@@ -9,6 +9,7 @@ let battingOrderWithScores = [];
 // Fetch and display the initial batting order
 async function fetchInitialBattingOrder() {
   try {
+    showLoader("Fetching Initial Batting Order...");
     const response = await fetch(`${AppConstants.baseUrl}/api/batting-order`);
     validateResponse(response);
 
@@ -21,6 +22,7 @@ async function fetchInitialBattingOrder() {
     } else {
       console.error("Order not found in response");
     }
+    hideLoader();
   } catch (error) {
     handleError(error);
   }
@@ -29,6 +31,7 @@ async function fetchInitialBattingOrder() {
 // Function to fetch players' last four scores
 async function fetchPlayersLastFour() {
   try {
+    showLoader("Fetching Players' Last Four Scores...");
     const response = await fetch(`${AppConstants.baseUrl}/api/players`);
     validateResponse(response);
 
@@ -39,6 +42,7 @@ async function fetchPlayersLastFour() {
     }));
 
     calculateNewBattingOrder();
+    hideLoader();
   } catch (error) {
     handleError(error);
   }
@@ -53,12 +57,29 @@ function validateResponse(response) {
 
 // Function to handle errors
 function handleError(error) {
+  hideLoader();
   console.error("There was a problem with the fetch operation:", error);
   Swal.fire({
     icon: "error",
     title: "Oops...",
     text: "Something went wrong!",
   });
+}
+
+// Function to show the loader
+function showLoader(message) {
+  Swal.fire({
+    title: message,
+    allowOutsideClick: false,
+    didOpen: () => {
+      Swal.showLoading();
+    },
+  });
+}
+
+// Function to hide the loader
+function hideLoader() {
+  Swal.close();
 }
 
 // Function to update the batting order list in the HTML
@@ -176,15 +197,7 @@ async function postNewBattingOrder() {
     return;
   }
 
-  Swal.fire({
-    title: "Posting Batting Order...",
-    text: "Please wait while the new batting order is being posted.",
-    allowOutsideClick: false,
-    didOpen: () => {
-      Swal.showLoading();
-    },
-  });
-
+  showLoader("Posting Batting Order...");
   try {
     const response = await fetch(`${AppConstants.baseUrl}/api/batting-order`, {
       method: "PUT",
@@ -205,6 +218,8 @@ async function postNewBattingOrder() {
     }, 2000);
   } catch (error) {
     handleError(error);
+  } finally {
+    hideLoader();
   }
 }
 
