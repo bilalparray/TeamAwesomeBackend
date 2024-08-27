@@ -54,6 +54,11 @@ function validateResponse(response) {
 // Function to handle errors
 function handleError(error) {
   console.error("There was a problem with the fetch operation:", error);
+  Swal.fire({
+    icon: "error",
+    title: "Oops...",
+    text: "Something went wrong!",
+  });
 }
 
 // Function to update the batting order list in the HTML
@@ -163,9 +168,22 @@ function areAllPlayersScoresComplete() {
 // Function to post the new batting order
 async function postNewBattingOrder() {
   if (!areAllPlayersScoresComplete()) {
-    console.error("Not all players have 4 scores in their last four matches.");
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "Not all players have 4 scores in their last four matches.",
+    });
     return;
   }
+
+  Swal.fire({
+    title: "Posting Batting Order...",
+    text: "Please wait while the new batting order is being posted.",
+    allowOutsideClick: false,
+    didOpen: () => {
+      Swal.showLoading();
+    },
+  });
 
   try {
     const response = await fetch(`${AppConstants.baseUrl}/api/batting-order`, {
@@ -177,6 +195,14 @@ async function postNewBattingOrder() {
     });
 
     validateResponse(response);
+
+    setTimeout(() => {
+      Swal.fire({
+        icon: "success",
+        title: "Success",
+        text: "The new batting order has been posted successfully!",
+      });
+    }, 2000);
   } catch (error) {
     handleError(error);
   }
