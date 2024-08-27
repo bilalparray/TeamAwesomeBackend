@@ -139,12 +139,19 @@ router.put("/api/data/:playerId", async (req, res) => {
     if (!player) {
       return res.status(404).json({ message: "Player not found" });
     }
+    if (lastfour) {
+      if (player.scores.lastfour.length === 4) {
+        player.scores.lastfour = lastfour;
+      } else {
+        player.scores.lastfour.push(...lastfour);
+      }
+    }
 
     // Append new elements to existing arrays
     if (runs) player.scores.runs.push(...runs);
     if (balls) player.scores.balls.push(...balls);
     if (wickets) player.scores.wickets.push(...wickets);
-    if (lastfour) player.scores.lastfour.push(...lastfour);
+    // if (lastfour) player.scores.lastfour.push(...lastfour);
     if (innings) player.scores.innings.push(...innings);
     if (runs) player.scores.career.runs.push(...runs);
     if (balls) player.scores.career.balls.push(...balls);
