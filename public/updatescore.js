@@ -72,8 +72,8 @@ document
       runs: formData.get("runs").split(","),
       balls: formData.get("balls").split(","),
       wickets: formData.get("wickets").split(","),
-      lastfour: formData.get("lastfour").split(","),
-      innings: formData.get("innings").split(","),
+      // lastfour: formData.get("lastfour").split(","),
+      // innings: formData.get("innings").split(","),
     };
 
     // Display confirmation dialog
@@ -85,8 +85,7 @@ document
           <li><strong>Runs:</strong> ${requestData.runs}</li>
           <li><strong>Balls:</strong> ${requestData.balls}</li>
           <li><strong>Wickets:</strong> ${requestData.wickets}</li>
-          <li><strong>Last Four:</strong> ${requestData.lastfour}</li>
-          <li><strong>Innings Runs:</strong> ${requestData.innings}</li>
+          
         </ul>
         <p>Are you sure you want to proceed?</p>`,
       icon: "question",

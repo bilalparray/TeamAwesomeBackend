@@ -132,31 +132,55 @@ router.get("/api/players", async (req, res) => {
 router.put("/api/data/:playerId", async (req, res) => {
   try {
     const playerId = req.params.playerId;
-    const { runs, balls, wickets, lastfour, innings } = req.body;
+    const { runs, balls, wickets } = req.body; // Remove lastfour and innings from the body
+
+    // Validate that runs, balls, and wickets are arrays
+    if (
+      (runs && !Array.isArray(runs)) ||
+      (balls && !Array.isArray(balls)) ||
+      (wickets && !Array.isArray(wickets))
+    ) {
+      return res.status(400).json({
+        message: "Invalid input: runs, balls, and wickets should be arrays",
+      });
+    }
 
     let player = await Player.findById(playerId);
 
     if (!player) {
       return res.status(404).json({ message: "Player not found" });
     }
-    if (lastfour) {
-      if (player.scores.lastfour.length === 4) {
-        player.scores.lastfour = lastfour;
+
+    // Update lastfour and innings arrays directly with runs if provided
+    if (runs) {
+      // Update lastfour array
+      if (player.scores.lastfour.length >= 4) {
+        player.scores.lastfour = runs.slice(0, 4); // Replace with the first 4 elements of runs
       } else {
-        player.scores.lastfour.push(...lastfour);
+        player.scores.lastfour.push(...runs);
+        // Trim the lastfour array to maintain only the latest 4 entries
+        player.scores.lastfour = player.scores.lastfour.slice(-4);
       }
+
+      // Append runs to innings and career's innings arrays
+      player.scores.innings.push(...runs);
+      player.scores.career.innings.push(...runs);
+
+      // Append runs to runs and career's runs arrays
+      player.scores.runs.push(...runs);
+      player.scores.career.runs.push(...runs);
     }
 
-    // Append new elements to existing arrays
-    if (runs) player.scores.runs.push(...runs);
-    if (balls) player.scores.balls.push(...balls);
-    if (wickets) player.scores.wickets.push(...wickets);
-    // if (lastfour) player.scores.lastfour.push(...lastfour);
-    if (innings) player.scores.innings.push(...innings);
-    if (runs) player.scores.career.runs.push(...runs);
-    if (balls) player.scores.career.balls.push(...balls);
-    if (wickets) player.scores.career.wickets.push(...wickets);
-    if (innings) player.scores.career.innings.push(...innings);
+    // Append balls and wickets to their respective arrays if they exist
+    if (balls) {
+      player.scores.balls.push(...balls);
+      player.scores.career.balls.push(...balls);
+    }
+
+    if (wickets) {
+      player.scores.wickets.push(...wickets);
+      player.scores.career.wickets.push(...wickets);
+    }
 
     await player.save();
 
