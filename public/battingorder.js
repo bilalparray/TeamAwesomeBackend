@@ -114,7 +114,12 @@ function calculateNewBattingOrder() {
     lastThreeFromInitial
   );
 
-  newBattingOrder = [...topFive, ...lastThreeFromInitial, ...remainingPlayers];
+  let sorted8Players = sortPlayersByLastFour([
+    ...topFive,
+    ...lastThreeFromInitial,
+  ]);
+
+  newBattingOrder = [...sorted8Players, ...remainingPlayers];
 
   battingOrderWithScores = calculateScores(newBattingOrder);
 
