@@ -2,18 +2,18 @@
   "_id": {
     "$oid": "66bc36585c9ae1f4be4c8710"
   },
-  "__v": 19,
+  "__v": 20,
   "order": [
-    "Sahil Parray",
-    "Ubi Obaid",
     "Bilal Ahmad Parray",
     "Liyaqat Tariq",
+    "Sahil Parray",
     "Suhail Parray",
-    "Ishtiyaq Ayoub",
     "Muzamil Fayaz",
-    "Showket Parray",
+    "Owais Farooq Dar",
     "Zahid Bashir",
     "Ahsaan ul Haq",
-    "Owais Farooq Dar"
+    "Ishtiyaq Ayoub",
+    "Ubi Obaid",
+    "Showket Parray"
   ]
 }]

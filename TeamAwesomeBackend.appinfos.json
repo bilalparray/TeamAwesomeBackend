@@ -2,6 +2,6 @@
   "_id": {
     "$oid": "669603fd5224d83463281e6f"
   },
-  "minimumVersion": "0.0.7",
+  "minimumVersion": "0.0.8",
   "isError": false
 }]
