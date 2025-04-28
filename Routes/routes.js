@@ -110,14 +110,7 @@ router.get("/api/players", async (req, res) => {
     // Map players and compress image if available
     const playersWithCompressedImages = await Promise.all(
       playersWithAverages.map(async ({ player }) => {
-        if (player.image) {
-          const compressedImage = await compressImage(
-            Buffer.from(player.image, "base64")
-          );
-          return { ...player.toObject(), image: compressedImage };
-        } else {
-          return { ...player.toObject(), image: null }; // Handle case where image is null or empty
-        }
+        return { ...player.toObject() };
       })
     );
 
