@@ -52,6 +52,7 @@ async function fetchPlayerDetails(playerId) {
     document.getElementById("battingstyle").value = playerData.battingstyle;
     document.getElementById("bowlingstyle").value = playerData.bowlingstyle;
     document.getElementById("debut").value = playerData.debut;
+    document.getElementById("image").value = playerData.image;
   } catch (error) {
     showAlert("error", "An error occurred while fetching player details");
   } finally {
@@ -74,8 +75,8 @@ document
     const formData = new FormData(this);
     const playerId = formData.get("playerId");
 
-    const imageFile = formData.get("image");
-    const base64Image = imageFile ? await convertToBase64(imageFile) : null;
+    // const imageFile = formData.get("image");
+    // const base64Image = imageFile ? await convertToBase64(imageFile) : null;
 
     const requestData = {
       name: formData.get("name"),
@@ -85,7 +86,7 @@ document
       battingstyle: formData.get("battingstyle"),
       bowlingstyle: formData.get("bowlingstyle"),
       debut: formData.get("debut"),
-      image: base64Image,
+      image: formData.get("image"),
     };
 
     // Display confirmation dialog
@@ -101,6 +102,7 @@ document
           <li><strong>Batting Style:</strong> ${requestData.battingstyle}</li>
           <li><strong>Bowling Style:</strong> ${requestData.bowlingstyle}</li>
           <li><strong>Debut:</strong> ${requestData.debut}</li>
+          <li><strong>Debut:</strong> ${requestData.image}</li>
         </ul>
         <p>Are you sure you want to proceed?</p>`,
       icon: "question",
@@ -138,14 +140,14 @@ document
   });
 
 // Function to convert image file to base64
-function convertToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = (error) => reject(error);
-    reader.readAsDataURL(file);
-  });
-}
+// function convertToBase64(file) {
+//   return new Promise((resolve, reject) => {
+//     const reader = new FileReader();
+//     reader.onload = () => resolve(reader.result);
+//     reader.onerror = (error) => reject(error);
+//     reader.readAsDataURL(file);
+//   });
+// }
 
 // Function to show SweetAlert
 function showAlert(icon, message) {
