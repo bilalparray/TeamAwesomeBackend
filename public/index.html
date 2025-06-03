@@ -1,170 +1,149 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Add Players</title>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.8/dist/sweetalert2.min.css"
-    />
 
-    <!-- Bootstrap CSS -->
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <style>
-      .loader-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(255, 255, 255, 0.8);
-        z-index: 9999;
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add Players</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.8/dist/sweetalert2.min.css" />
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    .loader-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.8);
+      z-index: 9999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .spinner-border {
+      width: 4rem;
+      height: 4rem;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 0 1rem;
+
+      a {
+        width: 30%;
+
+      }
+
+
+    }
+
+    @media only screen and (max-width:768px) {
+      .buttons {
         display: flex;
-        justify-content: center;
-        align-items: center;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 1rem;
+
+        a {
+          width: 100%;
+        }
       }
+    }
+  </style>
+</head>
 
-      .spinner-border {
-        width: 4rem;
-        height: 4rem;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h1 class="my-4">Add Player to Database</h1>
-      <form id="dataForm">
-        <div class="row">
-          <div class="col-6">
-            <div class="mb-3">
-              <label for="name" class="form-label">Player Name</label>
-              <input
-                type="text"
-                class="form-control"
-                name="name"
-                id="name"
-                required
-                placeholder="Bilal Ahmad Parray"
-              />
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="mb-3">
-              <label for="role" class="form-label">Player Role</label>
-              <input
-                type="text"
-                class="form-control"
-                name="role"
-                id="role"
-                placeholder="Batter"
-                required
-              />
-            </div>
+<body>
+  <div class="container">
+    <h1 class="my-4">Add Player to Database</h1>
+    <form id="dataForm">
+      <div class="row">
+        <div class="col-6">
+          <div class="mb-3">
+            <label for="name" class="form-label">Player Name</label>
+            <input type="text" class="form-control" name="name" id="name" required placeholder="Bilal Ahmad Parray" />
           </div>
         </div>
-        <div class="row">
-          <div class="col-6">
-            <div class="mb-3">
-              <label for="born" class="form-label">Player Born</label>
-              <input type="date" class="form-control" name="born" id="born" />
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="mb-3">
-              <label for="birthplace" class="form-label"
-                >Player Birth Place</label
-              >
-              <input
-                type="text"
-                class="form-control"
-                name="birthplace"
-                id="birthplace"
-                placeholder="Sozeith"
-                required
-              />
-            </div>
+        <div class="col-6">
+          <div class="mb-3">
+            <label for="role" class="form-label">Player Role</label>
+            <input type="text" class="form-control" name="role" id="role" placeholder="Batter" required />
           </div>
         </div>
-
-        <div class="row">
-          <div class="col-6">
-            <div class="mb-3">
-              <label for="battingstyle" class="form-label"
-                >Player Batting Style</label
-              >
-              <input
-                type="text"
-                class="form-control"
-                name="battingstyle"
-                id="battingstyle"
-                placeholder="Right Handed Batsman"
-                required
-              />
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="mb-3">
-              <label for="bowlingstyle" class="form-label"
-                >Player Bowling Style</label
-              >
-              <input
-                type="text"
-                class="form-control"
-                name="bowlingstyle"
-                id="bowlingstyle"
-                placeholder="Right Arm Slow"
-                required
-              />
-            </div>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="col-6">
-            <div class="mb-3">
-              <label for="debut" class="form-label">Player Debut</label>
-              <input type="date" class="form-control" name="debut" id="debut" />
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="mb-3">
-              <label for="image" class="form-label">Player Image</label>
-              <input
-                type="file"
-                class="form-control"
-                name="image"
-                id="image"
-                accept="image/*"
-              />
-            </div>
-          </div>
-        </div>
-
-        <button type="submit" class="btn btn-primary">Save Data</button>
-        <a type="button" class="btn btn-primary" href="/update">Update Runs</a>
-      </form>
-    </div>
-    <div class="row mx-auto m-3">
-      <a type="button" class="btn btn-primary" href="/battingorder"
-        >Go to Batting order Page</a
-      >
-    </div>
-    <!-- Loader -->
-    <div id="loader" class="loader-overlay d-none">
-      <div class="spinner-border" role="status">
-        <span class="visually-hidden">Loading...</span>
       </div>
-    </div>
+      <div class="row">
+        <div class="col-6">
+          <div class="mb-3">
+            <label for="born" class="form-label">Player Born</label>
+            <input type="date" class="form-control" name="born" id="born" />
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="mb-3">
+            <label for="birthplace" class="form-label">Player Birth Place</label>
+            <input type="text" class="form-control" name="birthplace" id="birthplace" placeholder="Sozeith" required />
+          </div>
+        </div>
+      </div>
 
-    <!-- Bootstrap JS (optional if you're not using Bootstrap's JavaScript components) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script type="module" src="homepage.js"></script>
-    <!-- <script>
+      <div class="row">
+        <div class="col-6">
+          <div class="mb-3">
+            <label for="battingstyle" class="form-label">Player Batting Style</label>
+            <input type="text" class="form-control" name="battingstyle" id="battingstyle"
+              placeholder="Right Handed Batsman" required />
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="mb-3">
+            <label for="bowlingstyle" class="form-label">Player Bowling Style</label>
+            <input type="text" class="form-control" name="bowlingstyle" id="bowlingstyle" placeholder="Right Arm Slow"
+              required />
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-6">
+          <div class="mb-3">
+            <label for="debut" class="form-label">Player Debut</label>
+            <input type="date" class="form-control" name="debut" id="debut" />
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="mb-3">
+            <label for="image" class="form-label">Player Image</label>
+            <input type="file" class="form-control" name="image" id="image" accept="image/*" />
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Save Data</button>
+    </form>
+  </div>
+  <div class="row  m-3 buttons">
+    <a type="button" class="btn btn-primary" href="/battingorder">Go to Batting order Page</a>
+    <a type="button" class="btn btn-primary" href="/update">Update Runs</a>
+    <a type="button" class="btn btn-primary" href="/updateplayer">Update Player Profile</a>
+
+
+  </div>
+  <!-- Loader -->
+  <div id="loader" class="loader-overlay d-none">
+    <div class="spinner-border" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS (optional if you're not using Bootstrap's JavaScript components) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script type="module" src="homepage.js"></script>
+  <!-- <script>
       const loader = document.getElementById("loader");
 
       function showLoader() {
@@ -250,5 +229,6 @@
         });
       }
     </script> -->
-  </body>
+</body>
+
 </html>
