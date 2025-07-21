@@ -16,37 +16,10 @@ app.use(bodyParser.urlencoded({ limit: "500kb", extended: true }));
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI);
 
-// Schema and Model
-// const playerSchema = new mongoose.Schema({
-//   name: String,
-//   role: String,
-//   born: Date,
-//   birthplace: String,
-//   battingstyle: String,
-//   bowlingstyle: String,
-//   debut: Date,
-//   image: String,
-//   scores: {
-//     runs: [String],
-//     balls: [String],
-//     wickets: [String],
-//     lastfour: [String],
-//     innings: [String],
-//     career: {
-//       balls: [String],
-//       runs: [String],
-//       wickets: [String],
-//       innings: [String],
-//       ranking: String,
-//     },
-//   },
-// });
-
 // Enable CORS
 app.use(cors());
 app.use(express.static(path.join(__dirname, "public")));
 // Middleware
-// app.use(bodyParser.json());
 
 // Routes
 app.use("/", routes);

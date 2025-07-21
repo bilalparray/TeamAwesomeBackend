@@ -1,73 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Batting Order Update</title>
-    <!-- Bootstrap CSS -->
-    <link
-      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <!-- SweetAlert CSS -->
-    <link
-      href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css"
-      rel="stylesheet"
-    />
-  </head>
-  <body>
-    <div class="container mt-1 mb-5">
-      <!-- Page Heading -->
-      <h1 class="text-center mb-4">Batting Order Update</h1>
 
-      <!-- Batting Orders Side by Side -->
-      <div class="row">
-        <!-- Initial Batting Order Column -->
-        <div class="col-md-6">
-          <h3 class="text-center">Initial Batting Order</h3>
-          <table class="table table-bordered">
-            <thead>
-              <tr>
-                <th class="text-center">Player</th>
-              </tr>
-            </thead>
-            <tbody id="battingOrderList">
-              <!-- Dynamic content will be appended here -->
-            </tbody>
-          </table>
-        </div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Batting Order Update</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- SweetAlert CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
+</head>
 
-        <!-- New Batting Order Column -->
-        <div class="col-md-6">
-          <h3 class="text-center">New Batting Order</h3>
-          <table class="table table-bordered">
-            <thead>
-              <tr>
-                <th class="text-center">Player</th>
-              </tr>
-            </thead>
-            <tbody id="newBattingOrderList">
-              <!-- Dynamic content will be appended here -->
-            </tbody>
-          </table>
-        </div>
+<body>
+  <div class="container mt-1 mb-5">
+    <!-- Page Heading -->
+    <h1 class="text-center mb-4">Batting Order Update</h1>
+
+    <!-- Batting Orders Side by Side -->
+    <div class="row">
+      <!-- Initial Batting Order Column -->
+      <div class="col-md-6">
+        <h3 class="text-center">Initial Batting Order</h3>
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th class="text-center">Player</th>
+            </tr>
+          </thead>
+          <tbody id="battingOrderList">
+            <!-- Dynamic content will be appended here -->
+          </tbody>
+        </table>
       </div>
 
-      <!-- Centered Button -->
-      <div class="d-flex justify-content-center mt-4">
-        <button class="btn btn-primary" id="postbattingorder">
-          Post Batting Order
-        </button>
-      </div>
-
-      <div class="row mx-auto m-3">
-        <a type="button" class="btn btn-primary" href="/">Home</a>
+      <!-- New Batting Order Column -->
+      <div class="col-md-6">
+        <h3 class="text-center">New Batting Order</h3>
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th class="text-center">Player</th>
+            </tr>
+          </thead>
+          <tbody id="newBattingOrderList">
+            <!-- Dynamic content will be appended here -->
+          </tbody>
+        </table>
       </div>
     </div>
 
-    <!-- SweetAlert JS -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- Your JavaScript File -->
-    <script type="module" src="battingorder.js"></script>
-  </body>
+    <!-- Centered Button -->
+    <div class="d-flex justify-content-center mt-4">
+      <button class="btn btn-primary" id="postbattingorder">
+        Post Batting Order
+      </button>
+    </div>
+
+    <div class="row mx-auto m-3">
+      <a type="button" class="btn btn-primary" href="/">Home</a>
+    </div>
+  </div>
+  <div class="row mx-auto m-3">
+    <a type="button" class="btn btn-primary" href="/updatewicket">Update Wickets</a>
+  </div>
+  <!-- SweetAlert JS -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- Your JavaScript File -->
+  <script type="module" src="battingorder.js"></script>
+</body>
+
 </html>

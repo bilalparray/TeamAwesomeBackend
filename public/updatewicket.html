@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Add Wicket</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
+    <style>
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .spinner-border {
+            width: 4rem;
+            height: 4rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container py-5">
+        <h1 class="mb-4">Add Wicket</h1>
+        <form id="wicketForm" class="row g-3">
+            <div class="col-12">
+                <label for="playerSelect" class="form-label">Select Player</label>
+                <select id="playerSelect" name="playerId" class="form-select" required>
+                    <option value="" disabled selected>-- choose player --</option>
+                </select>
+            </div>
+
+            <div class="col-12">
+                <label for="wicketInput" class="form-label">Wicket Entry</label>
+                <input type="number" id="wicketInput" name="wicket" class="form-control" placeholder="676" required />
+            </div>
+
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">Add Wicket</button>
+            </div>
+        </form>
+
+        <!-- Loader -->
+        <div id="loader" class="loader-overlay d-none">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading…</span>
+            </div>
+        </div>
+    </div>
+    <div class="row mx-auto m-3">
+        <a type="button" class="btn btn-primary" href="/battingorder">Go to Batting order Page</a>
+    </div>
+    <div class="row mx-auto m-3">
+        <a type="button" class="btn btn-primary" href="/">Home</a>
+    </div>
+    <!-- Bootstrap JS bundle -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Your constants -->
+    <script type="module" src="appconstants.js"></script>
+    <!-- Page logic -->
+    <script type="module" src="updatewicket.js"></script>
+</body>
+
+</html>

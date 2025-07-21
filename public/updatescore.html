@@ -1,142 +1,100 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Update Player Score</title>
-    <!-- Bootstrap CSS -->
-    <link
-      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <style>
-      .loader-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(255, 255, 255, 0.8);
-        z-index: 9999;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      }
-      .spinner-border {
-        width: 4rem;
-        height: 4rem;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h1 class="my-4">Update Player Details</h1>
-      <div class="row">
-        <div class="col-12">
-          <form id="updateForm">
-            <div class="row">
-              <div class="col-12">
-                <div class="mb-3">
-                  <label for="playerSelect" class="form-label"
-                    >Select Player:</label
-                  >
-                  <select id="playerSelect" name="playerId" class="form-select">
-                    <!-- Dropdown options will be populated dynamically -->
-                  </select>
-                </div>
-              </div>
-              <div class="col-12">
-                <div class="mb-3">
-                  <label for="runs" class="form-label">Runs</label>
-                  <input
-                    type="number"
-                    id="runs"
-                    name="runs"
-                    class="form-control"
-                    placeholder="Enter Runs Here"
-                  />
-                </div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-12">
-                <div class="mb-3">
-                  <label for="balls" class="form-label">Balls</label>
-                  <input
-                    type="number"
-                    id="balls"
-                    name="balls"
-                    class="form-control"
-                    placeholder="Enter Balls Here"
-                  />
-                </div>
-              </div>
-              <div class="col-12">
-                <div class="mb-3">
-                  <label for="wickets" class="form-label">Wickets</label>
-                  <input
-                    type="number"
-                    id="wickets"
-                    name="wickets"
-                    class="form-control"
-                    placeholder="Enter Wickets Here"
-                  />
-                </div>
-              </div>
-            </div>
-            <!-- <div class="row">
-              <div class="col-6">
-                <div class="mb-3">
-                  <label for="lastfour" class="form-label">Last Four</label>
-                  <input
-                    type="number"
-                    id="lastfour"
-                    name="lastfour"
-                    class="form-control"
-                    placeholder="Enter Runs Here For Batting Order"
-                  />
-                </div>
-              </div>
-              <div class="col-6">
-                <div class="mb-3">
-                  <label for="innings" class="form-label">Innings Runs</label>
-                  <input
-                    type="number"
-                    id="innings"
-                    name="innings"
-                    class="form-control"
-                    placeholder="Enter Runs Here"
-                  />
-                </div>
-              </div>
-            </div> -->
-            <div class="row mx-auto">
-              <button type="submit" class="btn btn-primary">
-                Update Score
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
 
-      <div class="row mx-auto m-3">
-        <a type="button" class="btn btn-primary" href="/battingorder"
-          >Go to Batting order Page</a
-        >
-      </div>
-      <!-- Loader -->
-      <div id="loader" class="loader-overlay d-none">
-        <div class="spinner-border" role="status">
-          <span class="visually-hidden">Loading...</span>
-        </div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Update Player Score</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    .loader-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.8);
+      z-index: 9999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .spinner-border {
+      width: 4rem;
+      height: 4rem;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1 class="my-4">Update Player Details</h1>
+    <div class="row">
+      <div class="col-12">
+        <form id="updateForm">
+          <div class="row">
+            <div class="col-12">
+              <div class="mb-3">
+                <label for="playerSelect" class="form-label">Select Player:</label>
+                <select id="playerSelect" name="playerId" class="form-select">
+                  <!-- Dropdown options will be populated dynamically -->
+                </select>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="mb-3">
+                <label for="runs" class="form-label">Runs</label>
+                <input type="number" id="runs" name="runs" class="form-control" placeholder="Enter Runs Here" />
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-12">
+              <div class="mb-3">
+                <label for="balls" class="form-label">Balls</label>
+                <input type="number" id="balls" name="balls" class="form-control" placeholder="Enter Balls Here" />
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="mb-3">
+                <label for="wickets" class="form-label">Wickets</label>
+                <input type="number" id="wickets" name="wickets" class="form-control"
+                  placeholder="Enter Wickets Here" />
+              </div>
+            </div>
+          </div>
+
+          <div class="row mx-auto">
+            <button type="submit" class="btn btn-primary">
+              Update Score
+            </button>
+          </div>
+        </form>
       </div>
     </div>
 
-    <!-- Bootstrap JS (optional if you're not using Bootstrap's JavaScript components) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <!-- SweetAlert JS -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <div class="row mx-auto m-3">
+      <a type="button" class="btn btn-primary" href="/battingorder">Go to Batting order Page</a>
+    </div>
+    <div class="row mx-auto m-3">
+      <a type="button" class="btn btn-primary" href="/updatewicket">Update Wickets</a>
+    </div>
+    <!-- Loader -->
+    <div id="loader" class="loader-overlay d-none">
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  </div>
 
-    <script type="module" src="updatescore.js"></script>
-  </body>
+  <!-- Bootstrap JS (optional if you're not using Bootstrap's JavaScript components) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+  <!-- SweetAlert JS -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <script type="module" src="updatescore.js"></script>
+</body>
+
 </html>

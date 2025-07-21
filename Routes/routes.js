@@ -18,6 +18,9 @@ router.get("/updateplayer", (req, res) => {
 router.get("/battingorder", (req, res) => {
   res.sendFile(path.join(__dirname, "..", "public", "battingorder.html"));
 });
+router.get("/updatewicket", (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "public", "updatewicket.html"));
+});
 // Get data for a player by ID
 
 router.get("/api/data/:playerId", async (req, res) => {
@@ -428,4 +431,46 @@ router.get("/api/batting-order", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
+// PUT /api/update/:playerId/wicket
+router.put("/api/update/:playerId/wicket", async (req, res) => {
+  try {
+    const { playerId } = req.params;
+    const { wicket } = req.body;
+
+    if (typeof wicket !== "string" || !wicket.trim()) {
+      return res
+        .status(400)
+        .json({ message: "Please provide a non-empty wicket string." });
+    }
+
+    // Atomically push to both arrays and return the updated doc
+    const updatedPlayer = await Player.findByIdAndUpdate(
+      playerId,
+      {
+        $push: {
+          "scores.wickets": wicket,
+          "scores.career.wickets": wicket,
+        },
+      },
+      { new: true, runValidators: true } // new: return the updated document
+    );
+
+    if (!updatedPlayer) {
+      return res.status(404).json({ message: "Player not found" });
+    }
+
+    res.status(200).json({
+      message: "Wicket added to both season and career records",
+      scores: {
+        seasonWickets: updatedPlayer.scores.wickets,
+        careerWickets: updatedPlayer.scores.career.wickets,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 module.exports = router;
