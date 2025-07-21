@@ -7,25 +7,7 @@
   <title>Update Player Score</title>
   <!-- Bootstrap CSS -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
-  <style>
-    .loader-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(255, 255, 255, 0.8);
-      z-index: 9999;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .spinner-border {
-      width: 4rem;
-      height: 4rem;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
@@ -80,6 +62,9 @@
     </div>
     <div class="row mx-auto m-3">
       <a type="button" class="btn btn-primary" href="/updatewicket">Update Wickets</a>
+    </div>
+    <div class="row mx-auto m-3">
+      <a type="button" class="btn btn-primary" href="/updatelast">Update last slot</a>
     </div>
     <!-- Loader -->
     <div id="loader" class="loader-overlay d-none">

@@ -21,6 +21,9 @@ router.get("/battingorder", (req, res) => {
 router.get("/updatewicket", (req, res) => {
   res.sendFile(path.join(__dirname, "..", "public", "updatewicket.html"));
 });
+router.get("/updatelast", (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "public", "updatelast.html"));
+});
 // Get data for a player by ID
 
 router.get("/api/data/:playerId", async (req, res) => {
@@ -470,6 +473,86 @@ router.put("/api/update/:playerId/wicket", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// PUT /api/update/:playerId/last
+router.put("/api/update/:playerId/last", async (req, res) => {
+  try {
+    const { playerId } = req.params;
+    const { runs, balls, wickets } = req.body;
+
+    // Validate that at least one field is provided
+    if (runs == null && balls == null && wickets == null) {
+      return res
+        .status(400)
+        .json({ message: "Provide at least one of: runs, balls, wickets" });
+    }
+
+    // Load player
+    const player = await Player.findById(playerId);
+    if (!player) {
+      return res.status(404).json({ message: "Player not found" });
+    }
+
+    // Helper fn to update last element of an array
+    const updateLast = (arr, value) => {
+      if (!Array.isArray(arr) || arr.length === 0) return false;
+      arr[arr.length - 1] = value;
+      return true;
+    };
+
+    // Update each if provided; track which failed because array was empty
+    const errors = [];
+    if (runs != null) {
+      const okSeason = updateLast(player.scores.runs, runs);
+      const okCareer = updateLast(player.scores.career.runs, runs);
+      if (!okSeason || !okCareer) errors.push("runs");
+    }
+    if (balls != null) {
+      const okSeason = updateLast(player.scores.balls, balls);
+      const okCareer = updateLast(player.scores.career.balls, balls);
+      if (!okSeason || !okCareer) errors.push("balls");
+    }
+    if (wickets != null) {
+      const okSeason = updateLast(player.scores.wickets, wickets);
+      const okCareer = updateLast(player.scores.career.wickets, wickets);
+      if (!okSeason || !okCareer) errors.push("wickets");
+    }
+
+    // Save document
+    await player.save();
+
+    // Build response
+    const resp = {
+      message: "Last entries updated",
+      updated: {},
+    };
+    if (runs != null)
+      resp.updated.runs = {
+        season: player.scores.runs,
+        career: player.scores.career.runs,
+      };
+    if (balls != null)
+      resp.updated.balls = {
+        season: player.scores.balls,
+        career: player.scores.career.balls,
+      };
+    if (wickets != null)
+      resp.updated.wickets = {
+        season: player.scores.wickets,
+        career: player.scores.career.wickets,
+      };
+    if (errors.length) {
+      resp.warning = `Could not update last element for: ${errors.join(
+        ", "
+      )} (empty array)`;
+    }
+
+    return res.status(200).json(resp);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Internal server error" });
   }
 });
 

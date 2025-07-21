@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Add Wicket</title>
+    <title>Update Last Entry</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="style.css" />
@@ -12,8 +12,8 @@
 
 <body>
     <div class="container py-5">
-        <h1 class="mb-4">Add Wicket</h1>
-        <form id="wicketForm" class="row g-3">
+        <h1 class="mb-4">Update Last Scores</h1>
+        <form id="lastForm" class="row g-3">
             <div class="col-12">
                 <label for="playerSelect" class="form-label">Select Player</label>
                 <select id="playerSelect" name="playerId" class="form-select" required>
@@ -21,21 +21,31 @@
                 </select>
             </div>
 
-            <div class="col-12">
-                <label for="wicketInput" class="form-label">Wicket Entry</label>
-                <input type="number" id="wicketInput" name="wicket" class="form-control" placeholder="676" required />
+            <div class="col-md-4">
+                <label for="runsInput" class="form-label">New Runs</label>
+                <input type="number" id="runsInput" name="runs" class="form-control" placeholder="e.g. 45" />
+            </div>
+
+            <div class="col-md-4">
+                <label for="ballsInput" class="form-label">New Balls</label>
+                <input type="number" id="ballsInput" name="balls" class="form-control" placeholder="e.g. 30" />
+            </div>
+
+            <div class="col-md-4">
+                <label for="wicketsInput" class="form-label">New Wickets</label>
+                <input type="number" id="wicketsInput" name="wickets" class="form-control" placeholder="e.g. 2" />
             </div>
 
             <div class="col-12">
-                <button type="submit" class="btn btn-primary">Add Wicket</button>
+                <button type="submit" class="btn btn-primary">Update Last Entry</button>
             </div>
         </form>
+    </div>
 
-        <!-- Loader -->
-        <div id="loader" class="loader-overlay d-none">
-            <div class="spinner-border" role="status">
-                <span class="visually-hidden">Loading…</span>
-            </div>
+    <!-- Loader -->
+    <div id="loader" class="loader-overlay d-none">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading…</span>
         </div>
     </div>
     <div class="row  m-3 buttons">
@@ -48,14 +58,11 @@
 
 
     </div>
-    <!-- Bootstrap JS bundle -->
+    <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- Your constants -->
     <script type="module" src="appconstants.js"></script>
-    <!-- Page logic -->
-    <script type="module" src="updatewicket.js"></script>
+    <script type="module" src="updateLast.js"></script>
 </body>
 
 </html>
