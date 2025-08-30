@@ -590,16 +590,24 @@ router.get("/api/nextmatch", async (req, res) => {
 });
 
 // GET: Single match by ID
-router.get("/api/nextmatch/:id", async (req, res) => {
+// PUT: Update a match
+router.put("/api/nextmatch/:id", async (req, res) => {
   try {
-    const match = await NextMatch.findById(req.params.id);
-    if (!match) return res.status(404).json({ message: "Match not found" });
-    res.status(200).json(match);
+    const updatedMatch = await NextMatch.findByIdAndUpdate(
+      req.params.id,
+      req.body,   // Accepts all fields: opponent, matchType, isSeries, etc.
+      { new: true, runValidators: true }
+    );
+    if (!updatedMatch) {
+      return res.status(404).json({ message: "Match not found" });
+    }
+    res.status(200).json(updatedMatch);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Error fetching match" });
+    res.status(500).json({ message: "Error updating match" });
   }
 });
+
 
 // PUT: Update a match by ID
 router.put("/api/nextmatch/:id", async (req, res) => {
@@ -622,6 +630,17 @@ router.delete("/api/nextmatch/:id", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error deleting match" });
+  }
+});
+// GET single match by ID
+router.get("/api/nextmatch/:id", async (req, res) => {
+  try {
+    const match = await NextMatch.findById(req.params.id);
+    if (!match) return res.status(404).json({ message: "Match not found" });
+    res.status(200).json(match);
+  } catch (err) {
+    console.error("Error fetching single match:", err);
+    res.status(500).json({ message: "Error fetching match" });
   }
 });
 

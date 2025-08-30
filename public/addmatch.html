@@ -3,68 +3,148 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Add Match</title>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <title>Next Match Manager</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f8f9fa;
+    }
+.d-none { display: none !important; }
+
+    h1, h2 {
+      text-align: center;
+      color: #333;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    form input, form select, form button {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+
+    form button {
+      grid-column: span 2;
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    form button:hover {
+      background: #0056b3;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      background: #007bff;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background: #f2f2f2;
+    }
+
+    button.action-btn {
+      padding: 5px 10px;
+      margin: 2px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .edit-btn {
+      background: #ffc107;
+      color: black;
+    }
+
+    .delete-btn {
+      background: #dc3545;
+      color: white;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      form {
+        grid-template-columns: 1fr;
+      }
+      table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+    }
+  </style>
 </head>
 <body>
-  <div class="container py-5">
-    <h1 class="mb-4">Add New Match</h1>
-    <form id="matchForm" class="row g-3">
-      <div class="col-md-6">
-        <label for="opponentInput" class="form-label">Opponent</label>
-        <input type="text" id="opponentInput" name="opponent" class="form-control" required />
-      </div>
-      <div class="col-md-6">
-        <label for="dateInput" class="form-label">Match Date</label>
-        <input type="datetime-local" id="dateInput" name="date" class="form-control" required />
-      </div>
+  <div class="container">
+    <h1>🏏 Next Match Manager</h1>
 
-      <div class="col-md-6">
-        <label for="isSeries" class="form-label">Is Series?</label>
-        <select id="isSeries" name="isSeries" class="form-select">
-          <option value="false">No</option>
-          <option value="true">Yes</option>
-        </select>
-      </div>
+    <h2>Add / Update Match</h2>
+    <form id="matchForm">
+      <input type="hidden" id="matchId">
 
-      <div class="col-md-6 series-field d-none">
-        <label for="seriesName" class="form-label">Series Name</label>
-        <input type="text" id="seriesName" name="seriesName" class="form-control" />
-      </div>
-      <div class="col-md-4 series-field d-none">
-        <label for="totalMatches" class="form-label">Total Matches</label>
-        <input type="number" id="totalMatches" name="totalMatches" class="form-control" />
-      </div>
-      <div class="col-md-4 series-field d-none">
-        <label for="matchNumber" class="form-label">Match Number</label>
-        <input type="number" id="matchNumber" name="matchNumber" class="form-control" />
-      </div>
-      <div class="col-md-4 series-field d-none">
-        <label for="seriesLeader" class="form-label">Series Leader</label>
-        <input type="text" id="seriesLeader" name="seriesLeader" class="form-control" />
-      </div>
+      <input type="text" id="matchVs" placeholder="Opponent Team" required>
+      <select id="matchType" required>
+        <option value="">Select Match Type</option>
+        <option value="Series">Series</option>
+        <option value="Individual">Individual</option>
+      </select>
+      <input type="number" id="seriesMatchNumber" placeholder="Match Number (Series)">
+      <input type="number" id="seriesWon" placeholder="How Many Won (Series)">
+      <input type="date" id="matchDate" required>
 
-      <div class="col-12">
-        <button type="submit" class="btn btn-success">Add Match</button>
-      </div>
+      <button type="submit">Save Match</button>
     </form>
+
+    <h2>Upcoming Matches</h2>
+    <table id="matchTable">
+      <thead>
+        <tr>
+          <th>Opponent</th>
+          <th>Type</th>
+          <th>Match #</th>
+          <th>Won</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </div>
 
-  <!-- Loader -->
-  <div id="loader" class="loader-overlay d-none">
-    <div class="spinner-border" role="status">
-      <span class="visually-hidden">Loading…</span>
-    </div>
-  </div>
-
-  <div class="row m-3 buttons">
-    <a class="btn btn-primary" href="/addmatch">Add Match</a>
-    <a class="btn btn-primary" href="/">Home</a>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script type="module" src="appconstants.js"></script>
   <script type="module" src="addmatch.js"></script>
 </body>
 </html>
