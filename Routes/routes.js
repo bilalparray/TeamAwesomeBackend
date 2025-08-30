@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Player = require("../models/PlayerSchema");
 const BattingOrder = require("../models/BattingOrderSchema");
+const NextMatch  =require("../models/NextMatchSchema")
 const AppInfo = require("../models/AppInfoSchema");
 const sharp = require("sharp");
 const path = require("path");
@@ -553,6 +554,71 @@ router.put("/api/update/:playerId/last", async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+
+
+
+
+
+
+// POST: Add new match
+router.post("/api/nextmatch", async (req, res) => {
+  try {
+    const newMatch = new NextMatch(req.body);
+    await newMatch.save();
+    res.status(201).json({ message: "Match added successfully", match: newMatch });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error adding match" });
+  }
+});
+
+// GET: All upcoming matches (sorted by date)
+router.get("/api/nextmatch", async (req, res) => {
+  try {
+ const matches = await NextMatch.find().sort({ createdAt: -1 });
+    res.status(200).json(matches);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error fetching matches" });
+  }
+});
+
+// GET: Single match by ID
+router.get("/api/nextmatch/:id", async (req, res) => {
+  try {
+    const match = await NextMatch.findById(req.params.id);
+    if (!match) return res.status(404).json({ message: "Match not found" });
+    res.status(200).json(match);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error fetching match" });
+  }
+});
+
+// PUT: Update a match by ID
+router.put("/api/nextmatch/:id", async (req, res) => {
+  try {
+    const match = await NextMatch.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!match) return res.status(404).json({ message: "Match not found" });
+    res.status(200).json({ message: "Match updated successfully", match });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error updating match" });
+  }
+});
+
+// DELETE: Remove a match by ID
+router.delete("/api/nextmatch/:id", async (req, res) => {
+  try {
+    const match = await NextMatch.findByIdAndDelete(req.params.id);
+    if (!match) return res.status(404).json({ message: "Match not found" });
+    res.status(200).json({ message: "Match deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error deleting match" });
   }
 });
 
