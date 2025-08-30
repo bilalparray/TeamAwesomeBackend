@@ -2,11 +2,32 @@
 import { AppConstants } from "./appconstants.js";
 
 const API_BASE = `${AppConstants.baseUrl}/api/nextmatch`;
+const loader = document.getElementById("loader");
 
 document.addEventListener("DOMContentLoaded", () => {
   wireUp();
   loadMatches();
 });
+
+function showAlert(icon, msg) {
+  Swal.fire({
+    position: "center",
+    icon,
+    title: msg,
+    showConfirmButton: false,
+    timer: 1500,
+  });
+}
+
+// Safe loader toggles (no crash if loader not present)
+function showLoader() {
+  if (!loader) return;
+  loader.classList.remove("d-none");
+}
+function hideLoader() {
+  if (!loader) return;
+  loader.classList.add("d-none");
+}
 
 /*
   Expected/optional HTML element IDs (script will work even if some are absent):
@@ -44,6 +65,7 @@ const isHomeMatchEl = document.getElementById("isHomeMatchCheckbox");
 const statusEl = document.getElementById("statusSelect");
 const dateEl = document.getElementById("matchDate");
 const tableBody = document.querySelector("#matchTable tbody") || document.querySelector("#matchTableBody");
+const resetBtn = document.getElementById("resetBtn");
 
 // wire up listeners
 function wireUp() {
@@ -52,6 +74,15 @@ function wireUp() {
     e.preventDefault();
     saveMatch();
   });
+
+  // reset button
+  if (resetBtn) {
+    resetBtn.addEventListener("click", () => {
+      form?.reset();
+      if (typeToggleExists()) (matchTypeEl || isSeriesCheckbox).dispatchEvent(new Event("change"));
+      if (idField) idField.value = "";
+    });
+  }
 
   // toggle series fields (if matchType select exists)
   const typeToggleEl = matchTypeEl || isSeriesCheckbox;
@@ -104,11 +135,11 @@ function toggleSeriesFields(show) {
       if (wrapper) wrapper.classList.remove("d-none");
       el.classList.remove("d-none");
     } else {
-      el.classList.add("d-none")
+      if (wrapper) wrapper.classList.add("d-none");
+      el.classList.add("d-none");
     }
   });
 }
-
 
 // safe JSON parse only if JSON content-type
 async function safeJson(res) {
@@ -119,28 +150,28 @@ async function safeJson(res) {
 
 // load and render matches (LIFO - backend already sorts by createdAt desc)
 async function loadMatches() {
+  showLoader();
   try {
     const res = await fetch(API_BASE, { method: "GET" });
     if (!res.ok) {
       const txt = await res.text();
       console.error("Failed to load matches:", txt);
-      alert("Failed to load matches. See console for server response.");
+      showAlert("error", "Failed to load matches. See console.");
       return;
     }
     const matches = await safeJson(res) || [];
     renderMatches(matches);
   } catch (err) {
     console.error("Error loading matches:", err);
-    alert("Error loading matches (see console).");
+    showAlert("error", "Error loading matches (see console).");
+  } finally {
+    hideLoader();
   }
 }
 
 function renderMatches(matches) {
   if (!tableBody) return;
   tableBody.innerHTML = "";
-
-  // Ensure array order: assume backend returns newest-first. If not, uncomment below line to reverse
-  // matches = matches.reverse();
 
   matches.forEach((m) => {
     const tr = document.createElement("tr");
@@ -164,7 +195,6 @@ function renderMatches(matches) {
       seriesScoreText = `${m.seriesScore.ourTeam ?? 0} - ${m.seriesScore.opponent ?? 0}`;
     }
 
-    // build actions (buttons attach via delegation after inserting)
     tr.innerHTML = `
       <td>${escapeHtml(opponent)}</td>
       <td>${isSeries ? "Series" : "Individual"}</td>
@@ -173,15 +203,15 @@ function renderMatches(matches) {
       <td>${escapeHtml(m.venue ?? "-")}</td>
       <td>${dateText}</td>
       <td>
-        <button class="action-edit" data-id="${m._id}">Edit</button>
-        <button class="action-delete" data-id="${m._id}">Delete</button>
+        <button class="btn btn-sm btn-warning action-edit" data-id="${m._id}">Edit</button>
+        <button class="btn btn-sm btn-danger action-delete" data-id="${m._id}">Delete</button>
       </td>
     `;
 
     tableBody.appendChild(tr);
   });
 
-  // attach listeners (delegation alternative)
+  // attach listeners
   tableBody.querySelectorAll(".action-edit").forEach(btn => {
     btn.removeEventListener("click", handleEditClick);
     btn.addEventListener("click", handleEditClick);
@@ -216,8 +246,6 @@ function buildPayloadFromForm() {
 
   // date - convert to ISO if input available
   if (dateEl && dateEl.value) {
-    // If input is datetime-local, add timezone by creating Date object and toISOString
-    // If input is date only, toISOString will include midnight UTC -> backend handles Date parsing
     try {
       const dt = new Date(dateEl.value);
       payload.date = dt.toISOString();
@@ -239,7 +267,6 @@ function buildPayloadFromForm() {
       opponent: seriesScoreOppEl && seriesScoreOppEl.value ? Number(seriesScoreOppEl.value) : 0
     };
   } else {
-    // fallback: if there is an element named 'seriesWon' treat it as ourTeam score
     const fallbackWon = document.getElementById("seriesWon");
     if (fallbackWon && fallbackWon.value) {
       payload.seriesScore = { ourTeam: Number(fallbackWon.value), opponent: 0 };
@@ -261,18 +288,17 @@ function buildPayloadFromForm() {
 
 // Save match (create or update)
 async function saveMatch() {
-  // basic validation
   if (!opponentEl || !opponentEl.value.trim()) {
-    alert("Opponent is required.");
+    showAlert("error", "Opponent is required.");
     return;
   }
   if (!dateEl || !dateEl.value) {
-    alert("Date is required.");
+    showAlert("error", "Date is required.");
     return;
   }
 
   const payload = buildPayloadFromForm();
-
+  showLoader();
   try {
     if (idField && idField.value) {
       // Update
@@ -285,14 +311,14 @@ async function saveMatch() {
       if (!res.ok) {
         const txt = await res.text();
         console.error("Update failed:", txt);
-        alert("Update failed. See console.");
+        showAlert("error", "Update failed. See console.");
         return;
       }
       await safeJson(res);
-      // reset form
       form?.reset();
       if (typeToggleExists()) (matchTypeEl || isSeriesCheckbox).dispatchEvent(new Event("change"));
       if (idField) idField.value = "";
+      showAlert("success", "Match updated successfully");
       await loadMatches();
       return;
     }
@@ -306,16 +332,19 @@ async function saveMatch() {
     if (!res.ok) {
       const txt = await res.text();
       console.error("Create failed:", txt);
-      alert("Create failed. See console.");
+      showAlert("error", "Create failed. See console.");
       return;
     }
     await safeJson(res);
     form?.reset();
     if (typeToggleExists()) (matchTypeEl || isSeriesCheckbox).dispatchEvent(new Event("change"));
+    showAlert("success", "Match added successfully");
     await loadMatches();
   } catch (err) {
     console.error("Error saving match:", err);
-    alert("Error saving match (see console).");
+    showAlert("error", "Error saving match (see console).");
+  } finally {
+    hideLoader();
   }
 }
 
@@ -325,17 +354,18 @@ function typeToggleExists() {
 
 // Edit: fetch a single match and populate the form with returned fields
 async function editMatch(id) {
+  showLoader();
   try {
     const res = await fetch(`${API_BASE}/${id}`, { method: "GET" });
     if (!res.ok) {
       const txt = await res.text();
       console.error("Failed to fetch match:", txt);
-      alert("Failed to fetch match details. See console.");
+      showAlert("error", "Failed to fetch match details. See console.");
       return;
     }
     const match = await safeJson(res);
     if (!match) {
-      alert("No match data returned.");
+      showAlert("error", "No match data returned.");
       return;
     }
 
@@ -361,11 +391,9 @@ async function editMatch(id) {
     if (d) {
       try {
         const dt = new Date(d);
-        // if user's input is datetime-local in HTML, set to yyyy-mm-ddThh:mm (slice 0-16)
         if (dateEl && dateEl.type === "datetime-local") {
           dateEl.value = dt.toISOString().slice(0, 16);
         } else if (dateEl) {
-          // date-only input
           dateEl.value = dt.toISOString().slice(0, 10);
         }
       } catch (e) {
@@ -373,32 +401,45 @@ async function editMatch(id) {
       }
     }
 
-    // toggle series fields state
     if (typeToggleExists()) (matchTypeEl || isSeriesCheckbox).dispatchEvent(new Event("change"));
-    // scroll to form (optional)
     opponentEl?.scrollIntoView({ behavior: "smooth", block: "center" });
   } catch (err) {
     console.error("Error in editMatch:", err);
-    alert("Error fetching match details (see console).");
+    showAlert("error", "Error fetching match details (see console).");
+  } finally {
+    hideLoader();
   }
 }
 
 // Delete
 async function deleteMatch(id) {
-  if (!confirm("Delete this match? This action cannot be undone.")) return;
+  const result = await Swal.fire({
+    title: "Are you sure?",
+    text: "Delete this match? This action cannot be undone.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, delete it",
+    cancelButtonText: "Cancel",
+  });
+  if (!result.isConfirmed) return;
+
+  showLoader();
   try {
     const res = await fetch(`${API_BASE}/${id}`, { method: "DELETE" });
     if (!res.ok) {
       const txt = await res.text();
       console.error("Delete failed:", txt);
-      alert("Delete failed. See console.");
+      showAlert("error", "Delete failed. See console.");
       return;
     }
     await safeJson(res);
+    showAlert("success", "Match deleted");
     await loadMatches();
   } catch (err) {
     console.error("Error deleting match:", err);
-    alert("Error deleting match (see console).");
+    showAlert("error", "Error deleting match (see console).");
+  } finally {
+    hideLoader();
   }
 }
 
