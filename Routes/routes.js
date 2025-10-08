@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Player = require("../models/PlayerSchema");
 const BattingOrder = require("../models/BattingOrderSchema");
-const NextMatch  =require("../models/NextMatchSchema")
+const NextMatch = require("../models/NextMatchSchema");
 const AppInfo = require("../models/AppInfoSchema");
 const sharp = require("sharp");
 const path = require("path");
@@ -560,18 +560,14 @@ router.put("/api/update/:playerId/last", async (req, res) => {
   }
 });
 
-
-
-
-
-
-
 // POST: Add new match
 router.post("/api/nextmatch", async (req, res) => {
   try {
     const newMatch = new NextMatch(req.body);
     await newMatch.save();
-    res.status(201).json({ message: "Match added successfully", match: newMatch });
+    res
+      .status(201)
+      .json({ message: "Match added successfully", match: newMatch });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error adding match" });
@@ -581,7 +577,7 @@ router.post("/api/nextmatch", async (req, res) => {
 // GET: All upcoming matches (sorted by date)
 router.get("/api/nextmatch", async (req, res) => {
   try {
- const matches = await NextMatch.find().sort({ createdAt: -1 });
+    const matches = await NextMatch.find().sort({ createdAt: -1 });
     res.status(200).json(matches);
   } catch (err) {
     console.error(err);
@@ -595,7 +591,7 @@ router.put("/api/nextmatch/:id", async (req, res) => {
   try {
     const updatedMatch = await NextMatch.findByIdAndUpdate(
       req.params.id,
-      req.body,   // Accepts all fields: opponent, matchType, isSeries, etc.
+      req.body, // Accepts all fields: opponent, matchType, isSeries, etc.
       { new: true, runValidators: true }
     );
     if (!updatedMatch) {
@@ -608,11 +604,12 @@ router.put("/api/nextmatch/:id", async (req, res) => {
   }
 });
 
-
 // PUT: Update a match by ID
 router.put("/api/nextmatch/:id", async (req, res) => {
   try {
-    const match = await NextMatch.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const match = await NextMatch.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+    });
     if (!match) return res.status(404).json({ message: "Match not found" });
     res.status(200).json({ message: "Match updated successfully", match });
   } catch (err) {
@@ -641,6 +638,107 @@ router.get("/api/nextmatch/:id", async (req, res) => {
   } catch (err) {
     console.error("Error fetching single match:", err);
     res.status(500).json({ message: "Error fetching match" });
+  }
+});
+
+// POST /api/stats/top
+// Body: { metric: "50s" | "100s" | "wickets", scope?: "year" | "career" }
+// scope defaults to "career"
+router.post("/api/stats/top", async (req, res) => {
+  try {
+    const { metric, scope = "career" } = req.body || {};
+
+    if (!metric) return res.status(400).json({ message: "metric is required" });
+
+    const normalizedMetric = String(metric).toLowerCase();
+
+    if (
+      !["50s", "fifties", "100s", "hundreds", "wickets"].includes(
+        normalizedMetric
+      )
+    ) {
+      return res
+        .status(400)
+        .json({ message: "metric must be one of: 50s, 100s, wickets" });
+    }
+    if (!["year", "career"].includes(scope)) {
+      return res
+        .status(400)
+        .json({ message: "scope must be 'year' or 'career'" });
+    }
+
+    // Fetch only fields we need
+    const players = await Player.find(
+      {},
+      { name: 1, role: 1, image: 1, scores: 1 }
+    ).lean();
+
+    const results = await Promise.all(
+      players.map(async (p) => {
+        // helpers to safely access arrays
+        const getInnings = () =>
+          scope === "career"
+            ? p.scores &&
+              p.scores.career &&
+              Array.isArray(p.scores.career.innings)
+              ? p.scores.career.innings
+              : []
+            : p.scores && Array.isArray(p.scores.innings)
+            ? p.scores.innings
+            : [];
+
+        const getWickets = () =>
+          scope === "career"
+            ? p.scores &&
+              p.scores.career &&
+              Array.isArray(p.scores.career.wickets)
+              ? p.scores.career.wickets
+              : []
+            : p.scores && Array.isArray(p.scores.wickets)
+            ? p.scores.wickets
+            : [];
+
+        let count = 0;
+
+        if (["50s", "fifties"].includes(normalizedMetric)) {
+          const innings = getInnings();
+          for (const entry of innings) {
+            const runs = parseInt(entry, 10);
+            if (!isNaN(runs) && runs >= 50 && runs < 100) count++;
+          }
+        } else if (["100s", "hundreds"].includes(normalizedMetric)) {
+          const innings = getInnings();
+          for (const entry of innings) {
+            const runs = parseInt(entry, 10);
+            if (!isNaN(runs) && runs >= 100) count++;
+          }
+        } else if (normalizedMetric === "wickets") {
+          const wicketsArr = getWickets();
+          for (const w of wicketsArr) {
+            const wk = parseInt(w, 10);
+            if (!isNaN(wk)) count += wk;
+          }
+        }
+
+        return {
+          _id: p._id,
+          name: p.name || "Unknown",
+          role: p.role || null,
+          image: p.image || null, // base64 compressed image or null
+          count: count, // will be 0 if no data
+        };
+      })
+    );
+
+    // sort descending by metricCount
+    results.sort((a, b) => b.count - a.count);
+
+    return res
+      .status(200)
+      .json({ metric: normalizedMetric, scope, players: results });
+  } catch (err) {
+    console.error("Error in /api/stats/top:", err);
+    return res.status(500).json({ message: "Internal server error" });
   }
 });
 
