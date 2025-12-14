@@ -511,7 +511,8 @@ router.put("/api/update/:playerId/last", async (req, res) => {
     if (runs != null) {
       const okSeason = updateLast(player.scores.runs, runs);
       const okCareer = updateLast(player.scores.career.runs, runs);
-      if (!okSeason || !okCareer) errors.push("runs");
+      const okLastFour = updateLast(player.scores.lastfour, runs);
+      if (!okSeason || !okCareer || !okLastFour) errors.push("runs");
     }
     if (balls != null) {
       const okSeason = updateLast(player.scores.balls, balls);
@@ -536,6 +537,7 @@ router.put("/api/update/:playerId/last", async (req, res) => {
       resp.updated.runs = {
         season: player.scores.runs,
         career: player.scores.career.runs,
+        lastfour: player.scores.lastfour,
       };
     if (balls != null)
       resp.updated.balls = {
