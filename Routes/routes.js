@@ -644,7 +644,7 @@ router.get("/api/nextmatch/:id", async (req, res) => {
 });
 
 // POST /api/stats/top
-// Body: { metric: "50s" | "100s" | "wickets", scope?: "year" | "career" }
+// Body: { metric: "50s" | "100s" | "wickets" | "runs", scope?: "year" | "career" }
 // scope defaults to "career"
 router.post("/api/stats/top", async (req, res) => {
   try {
@@ -655,13 +655,13 @@ router.post("/api/stats/top", async (req, res) => {
     const normalizedMetric = String(metric).toLowerCase();
 
     if (
-      !["50s", "fifties", "100s", "hundreds", "wickets"].includes(
+      !["50s", "fifties", "100s", "hundreds", "wickets", "runs"].includes(
         normalizedMetric
       )
     ) {
       return res
         .status(400)
-        .json({ message: "metric must be one of: 50s, 100s, wickets" });
+        .json({ message: "metric must be one of: 50s, 100s, wickets, runs" });
     }
     if (!["year", "career"].includes(scope)) {
       return res
@@ -700,6 +700,17 @@ router.post("/api/stats/top", async (req, res) => {
             ? p.scores.wickets
             : [];
 
+        const getRuns = () =>
+          scope === "career"
+            ? p.scores &&
+              p.scores.career &&
+              Array.isArray(p.scores.career.runs)
+              ? p.scores.career.runs
+              : []
+            : p.scores && Array.isArray(p.scores.runs)
+            ? p.scores.runs
+            : [];
+
         let count = 0;
 
         if (["50s", "fifties"].includes(normalizedMetric)) {
@@ -719,6 +730,12 @@ router.post("/api/stats/top", async (req, res) => {
           for (const w of wicketsArr) {
             const wk = parseInt(w, 10);
             if (!isNaN(wk)) count += wk;
+          }
+        } else if (normalizedMetric === "runs") {
+          const runsArr = getRuns();
+          for (const r of runsArr) {
+            const rv = parseInt(r, 10);
+            if (!isNaN(rv)) count += rv;
           }
         }
 
