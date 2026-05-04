@@ -14,12 +14,10 @@ const playerSchema = new mongoose.Schema({
     balls: [String],
     wickets: [String],
     lastfour: [String],
-    innings: [String],
     career: {
       balls: [String],
       runs: [String],
       wickets: [String],
-      innings: [String],
       ranking: String,
     },
   },

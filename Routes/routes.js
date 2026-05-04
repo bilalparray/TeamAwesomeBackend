@@ -135,7 +135,7 @@ router.get("/api/players", async (req, res) => {
 router.put("/api/data/:playerId", async (req, res) => {
   try {
     const playerId = req.params.playerId;
-    const { runs, balls, wickets } = req.body; // Remove lastfour and innings from the body
+    const { runs, balls, wickets } = req.body; // lastfour is derived from runs
 
     // Validate that runs, balls, and wickets are arrays
     if (
@@ -154,7 +154,7 @@ router.put("/api/data/:playerId", async (req, res) => {
       return res.status(404).json({ message: "Player not found" });
     }
 
-    // Update lastfour and innings arrays directly with runs if provided
+    // Update lastfour array directly with runs if provided
     if (runs) {
       // Update lastfour array
       if (player.scores.lastfour.length >= 4) {
@@ -164,10 +164,6 @@ router.put("/api/data/:playerId", async (req, res) => {
         // Trim the lastfour array to maintain only the latest 4 entries
         player.scores.lastfour = player.scores.lastfour.slice(-4);
       }
-
-      // Append runs to innings and career's innings arrays
-      player.scores.innings.push(...runs);
-      player.scores.career.innings.push(...runs);
 
       // Append runs to runs and career's runs arrays
       player.scores.runs.push(...runs);
@@ -221,12 +217,10 @@ router.post("/api/data", async (req, res) => {
         balls: [],
         wickets: [],
         lastfour: [],
-        innings: [],
         career: {
           balls: [],
           runs: [],
           wickets: [],
-          innings: [],
         },
       },
     });
@@ -678,17 +672,6 @@ router.post("/api/stats/top", async (req, res) => {
     const results = await Promise.all(
       players.map(async (p) => {
         // helpers to safely access arrays
-        const getInnings = () =>
-          scope === "career"
-            ? p.scores &&
-              p.scores.career &&
-              Array.isArray(p.scores.career.innings)
-              ? p.scores.career.innings
-              : []
-            : p.scores && Array.isArray(p.scores.innings)
-            ? p.scores.innings
-            : [];
-
         const getWickets = () =>
           scope === "career"
             ? p.scores &&
@@ -714,16 +697,16 @@ router.post("/api/stats/top", async (req, res) => {
         let count = 0;
 
         if (["50s", "fifties"].includes(normalizedMetric)) {
-          const innings = getInnings();
-          for (const entry of innings) {
-            const runs = parseInt(entry, 10);
-            if (!isNaN(runs) && runs >= 50 && runs < 100) count++;
+          const runsArr = getRuns();
+          for (const r of runsArr) {
+            const rv = parseInt(r, 10);
+            if (!isNaN(rv) && rv >= 50 && rv < 100) count++;
           }
         } else if (["100s", "hundreds"].includes(normalizedMetric)) {
-          const innings = getInnings();
-          for (const entry of innings) {
-            const runs = parseInt(entry, 10);
-            if (!isNaN(runs) && runs >= 100) count++;
+          const runsArr = getRuns();
+          for (const r of runsArr) {
+            const rv = parseInt(r, 10);
+            if (!isNaN(rv) && rv >= 100) count++;
           }
         } else if (normalizedMetric === "wickets") {
           const wicketsArr = getWickets();
