@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "migrate:scores:number:dry": "node scripts/migratePlayerScoresToNumbers.js --dry-run",
+    "migrate:scores:number": "node scripts/migratePlayerScoresToNumbers.js"
   },
   "keywords": [],
   "author": "",

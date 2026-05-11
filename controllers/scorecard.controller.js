@@ -173,21 +173,19 @@ async function applyScorecardToDb(req, res) {
       const runs = adjustedRuns;
       const balls = Number(item.balls);
       const wickets = Number(item.wickets);
+      const normalizedBalls = Number.isFinite(balls) ? balls : 0;
+      const normalizedWickets = Number.isFinite(wickets) ? wickets : 0;
 
-      const runStr = Number.isFinite(runs) ? String(runs) : "0";
-      const ballsStr = Number.isFinite(balls) ? String(balls) : "0";
-      const wicketsStr = Number.isFinite(wickets) ? String(wickets) : "0";
+      dbPlayer.scores.runs.push(runs);
+      dbPlayer.scores.balls.push(normalizedBalls);
+      dbPlayer.scores.wickets.push(normalizedWickets);
 
-      dbPlayer.scores.runs.push(runStr);
-      dbPlayer.scores.balls.push(ballsStr);
-      dbPlayer.scores.wickets.push(wicketsStr);
-
-      dbPlayer.scores.career.runs.push(runStr);
-      dbPlayer.scores.career.balls.push(ballsStr);
-      dbPlayer.scores.career.wickets.push(wicketsStr);
+      dbPlayer.scores.career.runs.push(runs);
+      dbPlayer.scores.career.balls.push(normalizedBalls);
+      dbPlayer.scores.career.wickets.push(normalizedWickets);
 
       // Maintain latest 4 innings scores in lastfour
-      dbPlayer.scores.lastfour.push(runStr);
+      dbPlayer.scores.lastfour.push(runs);
       dbPlayer.scores.lastfour = dbPlayer.scores.lastfour.slice(-4);
 
       await dbPlayer.save();
@@ -195,9 +193,9 @@ async function applyScorecardToDb(req, res) {
       updated.push({
         inputName: playerName,
         dbName: dbPlayer.name,
-        runsScored: Number.isFinite(runs) ? runs : 0,
-        balls: Number.isFinite(balls) ? balls : 0,
-        wickets: Number.isFinite(wickets) ? wickets : 0,
+        runsScored: runs,
+        balls: normalizedBalls,
+        wickets: normalizedWickets,
       });
     }
 
