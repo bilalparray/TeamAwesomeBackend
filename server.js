@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 const path = require("path");
 const sharp = require("sharp");
 const routes = require("./Routes/routes");
-const scorecardRoutes = require("./routes/scorecard.routes");
+const scorecardRoutes = require("./Routes/scorecard.routes");
 const app = express();
 const port = process.env.PORT || 3000;
 require("dotenv").config({
