@@ -28,6 +28,9 @@ router.get("/updatelast", (req, res) => {
 router.get("/addmatch", (req, res) => {
   res.sendFile(path.join(__dirname, "..", "public", "addmatch.html"));
 });
+router.get("/scorecard", (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "public", "scorecard.html"));
+});
 // Get data for a player by ID
 
 router.get("/api/data/:playerId", async (req, res) => {

@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const path = require("path");
 const sharp = require("sharp");
 const routes = require("./Routes/routes");
+const scorecardRoutes = require("./routes/scorecard.routes");
 const app = express();
 const port = process.env.PORT || 3000;
 require("dotenv").config({
@@ -23,6 +24,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // Routes
 app.use("/", routes);
+app.use("/api/scorecard", scorecardRoutes);
 // Start server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

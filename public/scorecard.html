@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scorecard PDF Processor</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.8/dist/sweetalert2.min.css" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .player-list {
+      max-height: 320px;
+      overflow: auto;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    pre {
+      background: #0b1020;
+      color: #e6edf3;
+      padding: 14px;
+      border-radius: 10px;
+      overflow: auto;
+      max-height: 420px;
+    }
+
+    .muted {
+      color: rgba(0, 0, 0, 0.6);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container my-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <h1 class="mb-1">Scorecard PDF Processor</h1>
+        <div class="muted">Upload PDF → extract players → select late players → generate JSON</div>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <a class="btn btn-outline-primary" href="/">Home</a>
+        <a class="btn btn-outline-primary" href="/update">Update Runs</a>
+        <a class="btn btn-outline-primary" href="/updatewicket">Update Wickets</a>
+        <a class="btn btn-outline-primary" href="/battingorder">Batting Order</a>
+      </div>
+    </div>
+
+    <hr class="my-4" />
+
+    <div class="row g-4">
+      <div class="col-lg-5">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title mb-3">1) Upload scorecard PDF</h5>
+
+            <div class="mb-3">
+              <label for="pdfFile" class="form-label">Scorecard PDF</label>
+              <input class="form-control" type="file" id="pdfFile" accept="application/pdf,.pdf" />
+              <div class="form-text">Max ~15MB. Must be a PDF file.</div>
+            </div>
+
+            <div class="d-flex gap-2 flex-wrap">
+              <button id="btnExtract" class="btn btn-primary" type="button">Extract Players</button>
+              <button id="btnProcess" class="btn btn-success" type="button" disabled>Generate JSON</button>
+              <button id="btnClear" class="btn btn-outline-secondary" type="button">Clear</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card shadow-sm mt-4">
+          <div class="card-body">
+            <h5 class="card-title mb-2">2) Select late players</h5>
+            <div class="muted mb-3">Select players who were late (sent as <code>latePlayers</code>).</div>
+
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <input id="searchInput" type="text" class="form-control" placeholder="Search player..." />
+              <button id="btnSelectAll" type="button" class="btn btn-outline-secondary">All</button>
+              <button id="btnSelectNone" type="button" class="btn btn-outline-secondary">None</button>
+            </div>
+
+            <div id="playerList" class="player-list">
+              <div class="muted">Extract players to see the list.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-7">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title mb-3">3) Output JSON</h5>
+            <pre id="outputJson">No output yet.</pre>
+            <div class="d-flex gap-2 flex-wrap">
+              <button id="btnCopy" class="btn btn-outline-primary" type="button" disabled>Copy JSON</button>
+              <button id="btnDownload" class="btn btn-outline-primary" type="button" disabled>Download .json</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loader -->
+  <div id="loader" class="loader-overlay d-none">
+    <div class="spinner-border" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script type="module" src="scorecard.js"></script>
+</body>
+
+</html>
+
