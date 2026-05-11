@@ -12,6 +12,7 @@ const btnSelectNone = document.getElementById("btnSelectNone");
 const outputJson = document.getElementById("outputJson");
 const btnCopy = document.getElementById("btnCopy");
 const btnDownload = document.getElementById("btnDownload");
+const btnApplyDb = document.getElementById("btnApplyDb");
 
 let extractedPlayers = [];
 let latestOutput = null;
@@ -86,6 +87,7 @@ function setOutput(obj) {
   outputJson.textContent = JSON.stringify(obj, null, 2);
   btnCopy.disabled = false;
   btnDownload.disabled = false;
+  btnApplyDb.disabled = false;
 }
 
 function clearAll() {
@@ -96,6 +98,7 @@ function clearAll() {
   btnProcess.disabled = true;
   btnCopy.disabled = true;
   btnDownload.disabled = true;
+  btnApplyDb.disabled = true;
   searchInput.value = "";
   pdfFile.value = "";
 }
@@ -230,6 +233,47 @@ btnDownload.addEventListener("click", () => {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+});
+
+btnApplyDb.addEventListener("click", async () => {
+  if (!Array.isArray(latestOutput) || latestOutput.length === 0) {
+    Swal.fire({
+      icon: "warning",
+      title: "No JSON to apply",
+      text: "Generate scorecard JSON first.",
+    });
+    return;
+  }
+
+  showLoader();
+  try {
+    const resp = await fetch(`${AppConstants.baseUrl}/api/scorecard/apply-to-db`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ players: latestOutput }),
+    });
+
+    const data = await resp.json().catch(() => null);
+    if (!resp.ok) {
+      throw new Error((data && data.message) || "Apply to DB failed");
+    }
+
+    Swal.fire({
+      icon: "success",
+      title: "Scores added to DB",
+      text: `Updated: ${data.updatedCount || 0}, Skipped: ${data.skippedCount || 0}`,
+    });
+  } catch (err) {
+    Swal.fire({
+      icon: "error",
+      title: "Apply failed",
+      text: String(err && err.message ? err.message : err),
+    });
+  } finally {
+    hideLoader();
+  }
 });
 
 // initial state

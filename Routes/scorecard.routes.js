@@ -3,6 +3,7 @@ const multer = require("multer");
 const {
   extractPlayers,
   processScorecard,
+  applyScorecardToDb,
 } = require("../controllers/scorecard.controller");
 
 const router = express.Router();
@@ -27,6 +28,10 @@ router.post("/extract-players", upload.single("pdf"), extractPlayers);
 
 // POST /api/scorecard/process
 router.post("/process", upload.single("pdf"), processScorecard);
+
+// POST /api/scorecard/apply-to-db
+// Body: { players: [{ playerName, runsScored, balls, wickets, ... }] }
+router.post("/apply-to-db", applyScorecardToDb);
 
 // Multer/fileFilter errors
 router.use((err, req, res, next) => {

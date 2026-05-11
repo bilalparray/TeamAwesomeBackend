@@ -4,6 +4,7 @@ const {
   parseScorecard,
 } = require("../services/scorecard.service");
 const { calculateAdjustedRuns } = require("../utils/scoreCalculator");
+const { findBestPlayerMatch, normalizeName } = require("../utils/nameMatcher");
 
 function parseLatePlayersField(latePlayersRaw) {
   if (latePlayersRaw == null || latePlayersRaw === "") return [];
@@ -115,7 +116,106 @@ async function processScorecard(req, res) {
   }
 }
 
+async function applyScorecardToDb(req, res) {
+  try {
+    const payloadPlayers = req.body && req.body.players;
+    if (!Array.isArray(payloadPlayers) || payloadPlayers.length === 0) {
+      return res.status(400).json({
+        message: "players array is required",
+      });
+    }
+
+    const dbPlayers = await Player.find({}, { name: 1, scores: 1 });
+    const dbPlayerNames = dbPlayers.map((p) => p.name).filter(Boolean);
+
+    const updated = [];
+    const skipped = [];
+
+    for (const item of payloadPlayers) {
+      const playerName = String((item && item.playerName) || "").trim();
+      if (!playerName) {
+        skipped.push({
+          playerName: "",
+          reason: "missing playerName",
+        });
+        continue;
+      }
+
+      const match = findBestPlayerMatch(playerName, dbPlayerNames);
+      if (!match.matched || !match.matchedName) {
+        skipped.push({
+          playerName,
+          reason: "player not found in database",
+        });
+        continue;
+      }
+
+      const dbPlayer = dbPlayers.find(
+        (p) => normalizeName(p.name) === normalizeName(match.matchedName)
+      );
+      if (!dbPlayer) {
+        skipped.push({
+          playerName,
+          reason: "player not found in loaded database set",
+        });
+        continue;
+      }
+
+      // Similar to existing score update API: append current match values.
+      // adjustedRuns is mandatory for DB score persistence.
+      const adjustedRuns = Number(item.adjustedRuns);
+      if (!Number.isFinite(adjustedRuns)) {
+        return res.status(400).json({
+          message: "adjustedRuns is required and must be a number for all players",
+          playerName,
+        });
+      }
+      const runs = adjustedRuns;
+      const balls = Number(item.balls);
+      const wickets = Number(item.wickets);
+
+      const runStr = Number.isFinite(runs) ? String(runs) : "0";
+      const ballsStr = Number.isFinite(balls) ? String(balls) : "0";
+      const wicketsStr = Number.isFinite(wickets) ? String(wickets) : "0";
+
+      dbPlayer.scores.runs.push(runStr);
+      dbPlayer.scores.balls.push(ballsStr);
+      dbPlayer.scores.wickets.push(wicketsStr);
+
+      dbPlayer.scores.career.runs.push(runStr);
+      dbPlayer.scores.career.balls.push(ballsStr);
+      dbPlayer.scores.career.wickets.push(wicketsStr);
+
+      // Maintain latest 4 innings scores in lastfour
+      dbPlayer.scores.lastfour.push(runStr);
+      dbPlayer.scores.lastfour = dbPlayer.scores.lastfour.slice(-4);
+
+      await dbPlayer.save();
+
+      updated.push({
+        inputName: playerName,
+        dbName: dbPlayer.name,
+        runsScored: Number.isFinite(runs) ? runs : 0,
+        balls: Number.isFinite(balls) ? balls : 0,
+        wickets: Number.isFinite(wickets) ? wickets : 0,
+      });
+    }
+
+    return res.status(200).json({
+      message: "Bulk score update completed",
+      updatedCount: updated.length,
+      skippedCount: skipped.length,
+      updated,
+      skipped,
+    });
+  } catch (err) {
+    console.error("Error in applyScorecardToDb:", err);
+    return res.status(500).json({ message: "Failed to apply scorecard to DB" });
+  }
+}
+
 module.exports = {
   extractPlayers,
   processScorecard,
+  applyScorecardToDb,
 };
