@@ -2792,7 +2792,7 @@
   "_id": {
     "$oid": "6652b6f2d19ac7b669a09f1f"
   },
-  "name": "Showket Parray",
+  "name": "Showkat Parray",
   "role": "All Rounder",
   "born": {
     "$date": "1999-04-04T00:00:00.000Z"
