@@ -171,8 +171,22 @@ async function applyScorecardToDb(req, res) {
         });
       }
       const runs = adjustedRuns;
-      const balls = Number(item.balls);
-      const wickets = Number(item.wickets);
+      const ballsProvided = item.balls != null && item.balls !== "";
+      const wicketsProvided = item.wickets != null && item.wickets !== "";
+      const balls = ballsProvided ? Number(item.balls) : 0;
+      const wickets = wicketsProvided ? Number(item.wickets) : 0;
+      if (ballsProvided && !Number.isFinite(balls)) {
+        return res.status(400).json({
+          message: "balls must be a valid number for all players when provided",
+          playerName,
+        });
+      }
+      if (wicketsProvided && !Number.isFinite(wickets)) {
+        return res.status(400).json({
+          message: "wickets must be a valid number for all players when provided",
+          playerName,
+        });
+      }
       const normalizedBalls = Number.isFinite(balls) ? balls : 0;
       const normalizedWickets = Number.isFinite(wickets) ? wickets : 0;
 

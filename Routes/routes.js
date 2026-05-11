@@ -7,6 +7,27 @@ const AppInfo = require("../models/AppInfoSchema");
 const sharp = require("sharp");
 const path = require("path");
 
+function parseFiniteNumber(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function parseFiniteNumberArray(values, fieldName) {
+  if (!Array.isArray(values)) {
+    return { error: `${fieldName} should be an array` };
+  }
+
+  const parsed = [];
+  for (let i = 0; i < values.length; i++) {
+    const n = parseFiniteNumber(values[i]);
+    if (n == null) {
+      return { error: `${fieldName}[${i}] must be a valid number` };
+    }
+    parsed.push(n);
+  }
+  return { values: parsed };
+}
+
 router.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "..", "public", "index.html"));
 });
@@ -151,6 +172,21 @@ router.put("/api/data/:playerId", async (req, res) => {
       });
     }
 
+    const normalizedRuns = runs ? parseFiniteNumberArray(runs, "runs") : null;
+    if (normalizedRuns && normalizedRuns.error) {
+      return res.status(400).json({ message: normalizedRuns.error });
+    }
+    const normalizedBalls = balls ? parseFiniteNumberArray(balls, "balls") : null;
+    if (normalizedBalls && normalizedBalls.error) {
+      return res.status(400).json({ message: normalizedBalls.error });
+    }
+    const normalizedWickets = wickets
+      ? parseFiniteNumberArray(wickets, "wickets")
+      : null;
+    if (normalizedWickets && normalizedWickets.error) {
+      return res.status(400).json({ message: normalizedWickets.error });
+    }
+
     let player = await Player.findById(playerId);
 
     if (!player) {
@@ -158,30 +194,31 @@ router.put("/api/data/:playerId", async (req, res) => {
     }
 
     // Update lastfour array directly with runs if provided
-    if (runs) {
+    if (normalizedRuns) {
+      const runValues = normalizedRuns.values;
       // Update lastfour array
       if (player.scores.lastfour.length >= 4) {
-        player.scores.lastfour = runs.slice(0, 4); // Replace with the first 4 elements of runs
+        player.scores.lastfour = runValues.slice(0, 4); // Replace with the first 4 elements of runs
       } else {
-        player.scores.lastfour.push(...runs);
+        player.scores.lastfour.push(...runValues);
         // Trim the lastfour array to maintain only the latest 4 entries
         player.scores.lastfour = player.scores.lastfour.slice(-4);
       }
 
       // Append runs to runs and career's runs arrays
-      player.scores.runs.push(...runs);
-      player.scores.career.runs.push(...runs);
+      player.scores.runs.push(...runValues);
+      player.scores.career.runs.push(...runValues);
     }
 
     // Append balls and wickets to their respective arrays if they exist
-    if (balls) {
-      player.scores.balls.push(...balls);
-      player.scores.career.balls.push(...balls);
+    if (normalizedBalls) {
+      player.scores.balls.push(...normalizedBalls.values);
+      player.scores.career.balls.push(...normalizedBalls.values);
     }
 
-    if (wickets) {
-      player.scores.wickets.push(...wickets);
-      player.scores.career.wickets.push(...wickets);
+    if (normalizedWickets) {
+      player.scores.wickets.push(...normalizedWickets.values);
+      player.scores.career.wickets.push(...normalizedWickets.values);
     }
 
     await player.save();
@@ -441,11 +478,12 @@ router.put("/api/update/:playerId/wicket", async (req, res) => {
   try {
     const { playerId } = req.params;
     const { wicket } = req.body;
+    const wicketValue = parseFiniteNumber(wicket);
 
-    if (typeof wicket !== "string" || !wicket.trim()) {
+    if (wicketValue == null) {
       return res
         .status(400)
-        .json({ message: "Please provide a non-empty wicket string." });
+        .json({ message: "Please provide wicket as a valid number." });
     }
 
     // Atomically push to both arrays and return the updated doc
@@ -453,8 +491,8 @@ router.put("/api/update/:playerId/wicket", async (req, res) => {
       playerId,
       {
         $push: {
-          "scores.wickets": wicket,
-          "scores.career.wickets": wicket,
+          "scores.wickets": wicketValue,
+          "scores.career.wickets": wicketValue,
         },
       },
       { new: true, runValidators: true } // new: return the updated document
@@ -490,6 +528,20 @@ router.put("/api/update/:playerId/last", async (req, res) => {
         .json({ message: "Provide at least one of: runs, balls, wickets" });
     }
 
+    const parsedRuns = runs != null ? parseFiniteNumber(runs) : null;
+    const parsedBalls = balls != null ? parseFiniteNumber(balls) : null;
+    const parsedWickets = wickets != null ? parseFiniteNumber(wickets) : null;
+
+    if (runs != null && parsedRuns == null) {
+      return res.status(400).json({ message: "runs must be a valid number" });
+    }
+    if (balls != null && parsedBalls == null) {
+      return res.status(400).json({ message: "balls must be a valid number" });
+    }
+    if (wickets != null && parsedWickets == null) {
+      return res.status(400).json({ message: "wickets must be a valid number" });
+    }
+
     // Load player
     const player = await Player.findById(playerId);
     if (!player) {
@@ -506,19 +558,19 @@ router.put("/api/update/:playerId/last", async (req, res) => {
     // Update each if provided; track which failed because array was empty
     const errors = [];
     if (runs != null) {
-      const okSeason = updateLast(player.scores.runs, runs);
-      const okCareer = updateLast(player.scores.career.runs, runs);
-      const okLastFour = updateLast(player.scores.lastfour, runs);
+      const okSeason = updateLast(player.scores.runs, parsedRuns);
+      const okCareer = updateLast(player.scores.career.runs, parsedRuns);
+      const okLastFour = updateLast(player.scores.lastfour, parsedRuns);
       if (!okSeason || !okCareer || !okLastFour) errors.push("runs");
     }
     if (balls != null) {
-      const okSeason = updateLast(player.scores.balls, balls);
-      const okCareer = updateLast(player.scores.career.balls, balls);
+      const okSeason = updateLast(player.scores.balls, parsedBalls);
+      const okCareer = updateLast(player.scores.career.balls, parsedBalls);
       if (!okSeason || !okCareer) errors.push("balls");
     }
     if (wickets != null) {
-      const okSeason = updateLast(player.scores.wickets, wickets);
-      const okCareer = updateLast(player.scores.career.wickets, wickets);
+      const okSeason = updateLast(player.scores.wickets, parsedWickets);
+      const okCareer = updateLast(player.scores.career.wickets, parsedWickets);
       if (!okSeason || !okCareer) errors.push("wickets");
     }
 
