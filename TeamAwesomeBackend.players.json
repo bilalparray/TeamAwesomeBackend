@@ -2,7 +2,7 @@
   "_id": {
     "$oid": "6652b672d19ac7b669a09f1d"
   },
-  "name": "Ahsaan ul Haq",
+  "name": "Ehsaan Ul Haq",
   "role": "All Rounder",
   "born": {
     "$date": "1999-04-04T00:00:00.000Z"
@@ -1405,7 +1405,7 @@
   "_id": {
     "$oid": "66371324442263bcbca255d2"
   },
-  "name": "Bilal Ahmad Parray",
+  "name": "Bilal Parray",
   "role": "Batsman",
   "born": {
     "$date": "2000-02-06T00:00:00.000Z"
@@ -2332,7 +2332,7 @@
   "_id": {
     "$oid": "663718755b9b6945ed15e6c8"
   },
-  "name": "Owais Farooq Dar",
+  "name": "Owais Farooq",
   "role": "All Rounder",
   "born": {
     "$date": "1999-04-04T00:00:00.000Z"
@@ -3257,7 +3257,7 @@
   "_id": {
     "$oid": "6652b6b5d19ac7b669a09f1e"
   },
-  "name": "Muzamil Fayaz",
+  "name": "Muzamil Bhat",
   "role": "All Rounder",
   "born": {
     "$date": "1999-04-04T00:00:00.000Z"
@@ -4200,7 +4200,7 @@
   "_id": {
     "$oid": "6652b756d19ac7b669a09f23"
   },
-  "name": "Liyaqat Tariq",
+  "name": "Liyaqat Bhat",
   "role": "All Rounder",
   "born": {
     "$date": "1999-04-04T00:00:00.000Z"
