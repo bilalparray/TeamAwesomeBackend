@@ -603,20 +603,6 @@ router.put("/api/nextmatch/:id", async (req, res) => {
   }
 });
 
-// PUT: Update a match by ID
-router.put("/api/nextmatch/:id", async (req, res) => {
-  try {
-    const match = await NextMatch.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    });
-    if (!match) return res.status(404).json({ message: "Match not found" });
-    res.status(200).json({ message: "Match updated successfully", match });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Error updating match" });
-  }
-});
-
 // DELETE: Remove a match by ID
 router.delete("/api/nextmatch/:id", async (req, res) => {
   try {
