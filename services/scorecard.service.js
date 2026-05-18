@@ -61,7 +61,7 @@ function textToLines(text) {
     .filter(Boolean);
 }
 
-const { findBestPlayerMatch, normalizeName } = require("../utils/nameMatcher");
+const { findExactPlayerMatch, normalizeName } = require("../utils/nameMatcher");
 
 const TEAM_NAME = "Team Awesome Sozeith";
 
@@ -81,14 +81,82 @@ function findBestBattingKeyForDbName(dbName, battingKeys) {
   const dbNorm = normalizeName(dbName);
   if (!dbNorm) return null;
 
-  // 1) strict exact match first
   for (const k of battingKeys) {
     if (normalizeName(k) === dbNorm) return k;
   }
+  return null;
+}
 
-  // 2) then fallback to fuzzy
-  const m = findBestPlayerMatch(dbName, battingKeys);
-  return m && m.matched ? m.matchedName : null;
+/** Map each bowling PDF row to one DB player (exact name match only). */
+function buildWicketsByDbName(bowlingRaw, dbPlayerNames) {
+  const wicketsByDbName = new Map();
+
+  for (const [bowlingPdfName, val] of bowlingRaw.entries()) {
+    const match = findExactPlayerMatch(bowlingPdfName, dbPlayerNames);
+    if (!match.matched || !match.matchedName) continue;
+
+    const w = Number(val.wickets) || 0;
+    const existing = wicketsByDbName.get(match.matchedName) || 0;
+    wicketsByDbName.set(match.matchedName, Math.max(existing, w));
+  }
+
+  return wicketsByDbName;
+}
+
+function blocksAreSame(a, b) {
+  return a.start === b.start && a.end === b.end;
+}
+
+function lineLooksLikeBattingDismissal(line, battingRegex) {
+  return battingRegex.test(line);
+}
+
+/**
+ * Prefer opponent-innings / post-"Bowling" lines so batting rows are not parsed as bowling.
+ */
+function selectBowlingLines(battingBlock, bowlingBlock) {
+  if (!blocksAreSame(battingBlock, bowlingBlock)) {
+    return bowlingBlock.lines;
+  }
+
+  const afterHeader = [];
+  let inBowling = false;
+  for (const line of battingBlock.lines) {
+    if (/^bowling\b/i.test(line)) {
+      inBowling = true;
+      continue;
+    }
+    if (inBowling) afterHeader.push(line);
+  }
+  if (afterHeader.length > 0) return afterHeader;
+
+  return battingBlock.lines;
+}
+
+function shouldSkipBowlingLine(line, name, batting, bowlingMatch, battingRegex) {
+  if (lineLooksLikeBattingDismissal(line, battingRegex)) return true;
+
+  const existing = batting.get(name);
+  if (!existing) return false;
+
+  // Lines that match both batting (runs/balls) and bowling (O M R W) are usually
+  // batting rows — do not credit wickets unless this player did not bat.
+  const wickets = parseInt(bowlingMatch[5], 10);
+  if (wickets > 0 && (existing.runsScored > 0 || existing.balls > 0)) {
+    const mSimple = line.match(
+      /^(?:\d+\s+)?([A-Za-z][A-Za-z\s.'\-()†]{1,90}?)\s+(\d+)\s+(\d+)\b/
+    );
+    if (mSimple && cleanScorecardName(mSimple[1]) === name) {
+      const runs = parseInt(mSimple[2], 10);
+      const balls = parseInt(mSimple[3], 10);
+      if (runs !== existing.runsScored || balls !== existing.balls) {
+        return false;
+      }
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function splitIntoInningsBlocks(allLines) {
@@ -184,7 +252,7 @@ function countDbMatches(names, dbPlayerNames) {
   const db = (dbPlayerNames || []).map((x) => String(x || "")).filter(Boolean);
   const matched = new Set();
   for (const n of names || []) {
-    const m = findBestPlayerMatch(n, db);
+    const m = findExactPlayerMatch(n, db);
     if (m && m.matched && m.matchedName) matched.add(normalizeName(m.matchedName));
   }
   return matched.size;
@@ -211,6 +279,19 @@ function pickMyTeamBlocks(allLines, dbPlayerNames) {
       bowlingBlock = blocks[teamHeaderIdx + 1];
     } else if (teamHeaderIdx - 1 >= 0) {
       bowlingBlock = blocks[teamHeaderIdx - 1];
+    }
+
+    if (blocksAreSame(bowlingBlock, battingBlock)) {
+      let bestAlt = null;
+      for (const b of blocks) {
+        if (blocksAreSame(b, battingBlock)) continue;
+        const score = countDbMatches(
+          extractBowlingNamesFromLines(b.lines),
+          dbPlayerNames
+        );
+        if (!bestAlt || score > bestAlt.score) bestAlt = { block: b, score };
+      }
+      if (bestAlt && bestAlt.score > 0) bowlingBlock = bestAlt.block;
     }
 
     return { battingBlock, bowlingBlock };
@@ -254,7 +335,7 @@ async function extractPlayerNamesFromPdf(pdfBuffer, dbPlayerNames = []) {
   const out = [];
   const seen = new Set();
   for (const n of extracted) {
-    const m = findBestPlayerMatch(n, dbPlayerNames);
+    const m = findExactPlayerMatch(n, dbPlayerNames);
     if (m && m.matched && m.matchedName) {
       const key = normalizeName(m.matchedName);
       if (!seen.has(key)) {
@@ -270,7 +351,9 @@ async function extractPlayerNamesFromPdf(pdfBuffer, dbPlayerNames = []) {
  * Parse batting + bowling into per-player stats.
  * Output is "raw stats" (no late/notout adjustments or DB matching yet).
  */
-async function parseScorecard(pdfBuffer, dbPlayerNames = []) {
+const SCORECARD_PARSER_VERSION = 4;
+
+async function parseScorecard(pdfBuffer, dbPlayerNames = [], options = {}) {
   const text = await extractTextFromPdf(pdfBuffer);
   const allLines = textToLines(text);
   const { battingBlock, bowlingBlock } = pickMyTeamBlocks(allLines, dbPlayerNames);
@@ -345,22 +428,28 @@ async function parseScorecard(pdfBuffer, dbPlayerNames = []) {
   // Bowling parsing
   // Common format: "<name> O M R W"
   const bowlingRegex =
-    /^(?:\d+\s+)?([A-Za-z][A-Za-z\s.'\-()†]{1,90}?)\s+(\d+(?:\.\d+)?)\s+(\d+)\s+(\d+)\s+(\d+)\b/;
-  for (const line of bowlingBlock.lines) {
+    /^(?:\d+\s+)?([A-Za-z][A-Za-z\s.'\-()†]{1,90})\s+(\d+(?:\.\d+)?)\s+(\d+)\s+(\d+)\s+(\d+)\b/;
+  const linesToParseForBowling = selectBowlingLines(battingBlock, bowlingBlock);
+
+  for (const line of linesToParseForBowling) {
     if (/^(extras|total|fall of wickets)/i.test(line)) continue;
     const m = line.match(bowlingRegex);
     if (!m) continue;
     const name = cleanScorecardName(m[1]);
+    if (shouldSkipBowlingLine(line, name, batting, m, battingRegex)) continue;
     const wickets = parseInt(m[5], 10);
     bowlingRaw.set(name, { wickets: Number.isFinite(wickets) ? wickets : 0 });
   }
 
+  const wicketsByDbName = buildWicketsByDbName(bowlingRaw, dbPlayerNames);
+
   // Combine: only MY TEAM players (matched to DB) from batting block
   const rosterMatchedNames = new Set();
   for (const name of batting.keys()) {
-    const m = findBestPlayerMatch(name, dbPlayerNames);
+    const m = findExactPlayerMatch(name, dbPlayerNames);
     if (m && m.matched && m.matchedName) rosterMatchedNames.add(m.matchedName);
   }
+
   const players = [];
   for (const matchedName of rosterMatchedNames) {
     // Map DB name to batting row: exact normalized match first, fuzzy second.
@@ -369,19 +458,7 @@ async function parseScorecard(pdfBuffer, dbPlayerNames = []) {
       Array.from(batting.keys())
     );
     const b = battingKey ? batting.get(battingKey) : null;
-
-    // find wickets by best-effort match against bowlingRaw keys
-    let wickets = 0;
-    if (bowlingRaw.has(matchedName)) {
-      wickets = bowlingRaw.get(matchedName).wickets || 0;
-    } else {
-      // fuzzy match for minor spelling differences between sections
-      const candidateKeys = Array.from(bowlingRaw.keys());
-      const match = findBestPlayerMatch(matchedName, candidateKeys);
-      if (match.matched && match.matchedName && bowlingRaw.has(match.matchedName)) {
-        wickets = bowlingRaw.get(match.matchedName).wickets || 0;
-      }
-    }
+    const wickets = wicketsByDbName.get(matchedName) || 0;
 
     players.push({
       playerName: matchedName,
@@ -393,10 +470,23 @@ async function parseScorecard(pdfBuffer, dbPlayerNames = []) {
     });
   }
 
-  return { text, lines: allLines, players };
+  const out = { text, lines: allLines, players, parserVersion: SCORECARD_PARSER_VERSION };
+  if (options.debug) {
+    out._debug = {
+      parserVersion: SCORECARD_PARSER_VERSION,
+      sameBattingBowlingBlock: blocksAreSame(battingBlock, bowlingBlock),
+      bowlingLinesParsed: linesToParseForBowling.length,
+      bowlingRaw: Object.fromEntries(
+        Array.from(bowlingRaw.entries()).map(([k, v]) => [k, v.wickets])
+      ),
+      wicketsByDbName: Object.fromEntries(wicketsByDbName.entries()),
+    };
+  }
+  return out;
 }
 
 module.exports = {
+  SCORECARD_PARSER_VERSION,
   extractPlayerNamesFromPdf,
   parseScorecard,
   extractTextFromPdf,

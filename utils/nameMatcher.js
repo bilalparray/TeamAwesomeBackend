@@ -7,6 +7,14 @@ function normalizeName(name) {
     .trim();
 }
 
+function getNameTokens(name) {
+  const norm = normalizeName(name);
+  if (!norm) return { first: "", rest: "" };
+  const parts = norm.split(/\s+/).filter(Boolean);
+  if (parts.length === 1) return { first: parts[0], rest: "" };
+  return { first: parts[0], rest: parts.slice(1).join(" ") };
+}
+
 // Levenshtein distance (iterative DP, O(min(n,m)) space)
 function levenshtein(a, b) {
   if (a === b) return 0;
@@ -32,6 +40,23 @@ function levenshtein(a, b) {
   }
 
   return prev[s.length];
+}
+
+/**
+ * Exact full-name match only (normalized). Use for scorecard PDF → DB linking.
+ */
+function findExactPlayerMatch(inputName, dbPlayers) {
+  const needle = normalizeName(inputName);
+  if (!needle) return { matched: false };
+
+  for (const p of dbPlayers || []) {
+    const candidateName = typeof p === "string" ? p : p && p.name;
+    if (!candidateName) continue;
+    if (normalizeName(candidateName) === needle) {
+      return { matched: true, matchedName: candidateName, distance: 0 };
+    }
+  }
+  return { matched: false };
 }
 
 /**
@@ -70,8 +95,37 @@ function findBestPlayerMatch(inputName, dbPlayers) {
   return { matched: false, matchedName: best.matchedName, distance: best.distance };
 }
 
+/**
+ * Stricter variant for bowling rows: full-name fuzzy match only when the
+ * first/given name is also a close match (avoids Sahil vs Suhail collisions).
+ */
+function findBestPlayerMatchStrict(inputName, dbPlayers) {
+  const result = findBestPlayerMatch(inputName, dbPlayers);
+  if (!result.matched || !result.matchedName) return result;
+
+  const inputTokens = getNameTokens(inputName);
+  const matchTokens = getNameTokens(result.matchedName);
+  if (!inputTokens.first || !matchTokens.first) return result;
+
+  const firstDist = levenshtein(inputTokens.first, matchTokens.first);
+  const firstLen = Math.max(inputTokens.first.length, matchTokens.first.length);
+  const maxFirstDist = firstLen <= 6 ? 1 : firstLen <= 10 ? 2 : Math.floor(firstLen * 0.2);
+  if (firstDist > maxFirstDist) {
+    return {
+      matched: false,
+      matchedName: result.matchedName,
+      distance: result.distance,
+    };
+  }
+
+  return result;
+}
+
 module.exports = {
   normalizeName,
+  getNameTokens,
+  findExactPlayerMatch,
   findBestPlayerMatch,
+  findBestPlayerMatchStrict,
   levenshtein,
 };

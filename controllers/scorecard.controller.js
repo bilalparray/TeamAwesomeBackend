@@ -2,9 +2,10 @@ const Player = require("../models/PlayerSchema");
 const {
   extractPlayerNamesFromPdf,
   parseScorecard,
+  SCORECARD_PARSER_VERSION,
 } = require("../services/scorecard.service");
 const { calculateAdjustedRuns } = require("../utils/scoreCalculator");
-const { findBestPlayerMatch, normalizeName } = require("../utils/nameMatcher");
+const { findExactPlayerMatch, normalizeName } = require("../utils/nameMatcher");
 
 function parseLatePlayersField(latePlayersRaw) {
   if (latePlayersRaw == null || latePlayersRaw === "") return [];
@@ -63,9 +64,11 @@ async function processScorecard(req, res) {
     const dbPlayers = await Player.find({}, { name: 1 }).lean();
     const dbPlayerNames = dbPlayers.map((p) => p.name).filter(Boolean);
 
+    const debug = req.query && req.query.debug === "1";
     const { players: parsedPlayers } = await parseScorecard(
       req.file.buffer,
-      dbPlayerNames
+      dbPlayerNames,
+      { debug }
     );
 
     const result = parsedPlayers.map((p) => {
@@ -109,6 +112,7 @@ async function processScorecard(req, res) {
     // keep stable ordering: highest adjustedRuns then name (easy to change)
     result.sort((a, b) => b.adjustedRuns - a.adjustedRuns || a.playerName.localeCompare(b.playerName));
 
+    res.setHeader("X-Scorecard-Parser-Version", String(SCORECARD_PARSER_VERSION));
     return res.status(200).json(result);
   } catch (err) {
     console.error("Error in processScorecard:", err);
@@ -141,7 +145,7 @@ async function applyScorecardToDb(req, res) {
         continue;
       }
 
-      const match = findBestPlayerMatch(playerName, dbPlayerNames);
+      const match = findExactPlayerMatch(playerName, dbPlayerNames);
       if (!match.matched || !match.matchedName) {
         skipped.push({
           playerName,
