@@ -79,12 +79,7 @@
         <h1 class="mb-1">Scorecard PDF Processor</h1>
         <div class="muted">Upload PDF → extract players → select late players → generate JSON</div>
       </div>
-      <div class="d-flex gap-2 flex-wrap">
-        <a class="btn btn-outline-primary" href="/">Home</a>
-        <a class="btn btn-outline-primary" href="/update">Update Runs</a>
-        <a class="btn btn-outline-primary" href="/updatewicket">Update Wickets</a>
-        <a class="btn btn-outline-primary" href="/battingorder">Batting Order</a>
-      </div>
+
     </div>
 
     <hr class="my-4" />
@@ -103,7 +98,7 @@
 
             <div class="d-flex gap-2 flex-wrap">
               <button id="btnExtract" class="btn btn-primary" type="button">Extract Players</button>
-              <button id="btnProcess" class="btn btn-success" type="button" disabled>Generate JSON</button>
+
               <button id="btnClear" class="btn btn-outline-secondary" type="button">Clear</button>
             </div>
           </div>
@@ -124,6 +119,11 @@
               <div class="muted">Extract players to see the list.</div>
             </div>
           </div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+
+          <button id="btnProcess" class="btn btn-success" type="button" disabled>Generate JSON</button>
+
         </div>
       </div>
 
