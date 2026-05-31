@@ -61,7 +61,11 @@ function textToLines(text) {
     .filter(Boolean);
 }
 
-const { findExactPlayerMatch, normalizeName } = require("../utils/nameMatcher");
+const {
+  findExactPlayerMatch,
+  canonicalPlayerNameForMatch,
+  normalizeName,
+} = require("../utils/nameMatcher");
 
 const TEAM_NAME = "Team Awesome Sozeith";
 
@@ -78,14 +82,37 @@ function cleanScorecardName(raw) {
 }
 
 function findBestBattingKeyForDbName(dbName, battingKeys) {
-  const dbNorm = normalizeName(dbName);
-  if (!dbNorm) return null;
+  const dbCanon = canonicalPlayerNameForMatch(dbName);
+  if (!dbCanon) return null;
 
   for (const k of battingKeys) {
-    if (normalizeName(k) === dbNorm) return k;
+    if (canonicalPlayerNameForMatch(k) === dbCanon) return k;
   }
   return null;
 }
+
+function prepareBattingLine(line) {
+  return String(line || "")
+    .replace(/†/g, "")
+    .replace(/\(\s*(?:RHB|LHB|wk|c)\s*\)/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** True only for a real not-out innings, not a bowler named "Asif Not Out". */
+function isDismissalNotOut(dismissal) {
+  let d = String(dismissal || "").trim();
+  if (!d) return false;
+  // "c X b Asif Not Out" — not out is part of the bowler's name
+  if (/\bb\s+[\w\s]*not\s+out\s*$/i.test(d)) return false;
+  return /^not\s+out\b/i.test(d);
+}
+
+// Cricheroes rows: … dismissal R B M 4s 6s SR — R/B are the first two ints after dismissal
+const BATTING_LINE_REGEX =
+  /^(?:\d+\s+)?([A-Za-z][A-Za-z0-9\s.'\-]{1,90}?)\s+((?:not\s+out|c&b|c|lbw|run\s+out|st|retired|b)\b(?:\s+[^\d]+)*?)\s+(\d+)\s+(\d+)(?:\s+\d)/i;
+const BATTING_LINE_SIMPLE_REGEX =
+  /^(?:\d+\s+)?([A-Za-z][A-Za-z0-9\s.'\-]{1,90}?)\s+(\d+)\s+(\d+)\b/;
 
 /** Map each bowling PDF row to one DB player (exact name match only). */
 function buildWicketsByDbName(bowlingRaw, dbPlayerNames) {
@@ -209,21 +236,17 @@ function extractNonBattingNamesFromLines(lines) {
 function extractBattingNamesFromLines(lines) {
   const names = new Set();
 
-  // Cricheroes style: "<no> <name/tags> <dismissal> <runs> <balls> ..."
-  // Name must stop where dismissal starts.
-  const battingLine =
-    /^(?:\d+\s+)?([A-Za-z][A-Za-z\s.'\-()†]{1,90}?)\s+((?:not\s+out|c&b|c|b|lbw|run\s+out|st|retired)(?:\s+[A-Za-z†().'\-&]+)*)\s+(\d+)\s+(\d+)\b/i;
-  const battingLineAlt =
-    /^(?:\d+\s+)?([A-Za-z][A-Za-z\s.'\-()†]{1,90}?)\s+(\d+)\s+(\d+)\b/;
+  for (const rawLine of lines || []) {
+    const line = prepareBattingLine(rawLine);
+    if (/^(extras|total|fall of wickets|no batsman)/i.test(line)) continue;
 
-  for (const line of lines || []) {
-    let m = line.match(battingLine);
+    let m = line.match(BATTING_LINE_REGEX);
     if (m) {
       const cleaned = cleanScorecardName(m[1]);
       if (cleaned) names.add(cleaned);
       continue;
     }
-    m = line.match(battingLineAlt);
+    m = line.match(BATTING_LINE_SIMPLE_REGEX);
     if (m) {
       const n = cleanScorecardName(m[1]);
       if (!/^(extras|total|fall of wickets)/i.test(n)) names.add(n);
@@ -351,7 +374,7 @@ async function extractPlayerNamesFromPdf(pdfBuffer, dbPlayerNames = []) {
  * Parse batting + bowling into per-player stats.
  * Output is "raw stats" (no late/notout adjustments or DB matching yet).
  */
-const SCORECARD_PARSER_VERSION = 4;
+const SCORECARD_PARSER_VERSION = 6;
 
 async function parseScorecard(pdfBuffer, dbPlayerNames = [], options = {}) {
   const text = await extractTextFromPdf(pdfBuffer);
@@ -366,17 +389,13 @@ async function parseScorecard(pdfBuffer, dbPlayerNames = [], options = {}) {
   // Detect DNB
   for (const p of extractNonBattingNamesFromLines(teamLines)) didNotBat.add(p);
 
-  // Batting parsing
-  // Primary: "<no?> <name> <dismissal> <runs> <balls> ..."
-  // Fallback: "<no?> <name> <runs> <balls>" (assume out unless "not out" present)
-  const battingRegex =
-    /^(?:\d+\s+)?([A-Za-z][A-Za-z\s.'\-()†]{1,90}?)\s+((?:not\s+out|c&b|c|b|lbw|run\s+out|st|retired)(?:\s+[A-Za-z†().'\-&]+)*)\s+(\d+)\s+(\d+)\b/i;
-  const battingRegexSimple =
-    /^(?:\d+\s+)?([A-Za-z][A-Za-z\s.'\-()†]{1,90}?)\s+(\d+)\s+(\d+)\b/;
+  const battingRegex = BATTING_LINE_REGEX;
+  const battingRegexSimple = BATTING_LINE_SIMPLE_REGEX;
 
-  for (const line of teamLines) {
+  for (const rawLine of teamLines) {
+    const line = prepareBattingLine(rawLine);
     // skip obvious non-player rows
-    if (/^(extras|total|fall of wickets)/i.test(line)) continue;
+    if (/^(extras|total|fall of wickets|no batsman)/i.test(line)) continue;
 
     let m = line.match(battingRegex);
     if (m) {
@@ -384,7 +403,7 @@ async function parseScorecard(pdfBuffer, dbPlayerNames = [], options = {}) {
       const dismissal = String(m[2] || "").trim();
       const runsScored = parseInt(m[3], 10);
       const balls = parseInt(m[4], 10);
-      const isNotOut = /not\s+out/i.test(dismissal);
+      const isNotOut = isDismissalNotOut(dismissal);
       batting.set(name, {
         playerName: name,
         runsScored: Number.isFinite(runsScored) ? runsScored : 0,
@@ -431,8 +450,9 @@ async function parseScorecard(pdfBuffer, dbPlayerNames = [], options = {}) {
     /^(?:\d+\s+)?([A-Za-z][A-Za-z\s.'\-()†]{1,90})\s+(\d+(?:\.\d+)?)\s+(\d+)\s+(\d+)\s+(\d+)\b/;
   const linesToParseForBowling = selectBowlingLines(battingBlock, bowlingBlock);
 
-  for (const line of linesToParseForBowling) {
-    if (/^(extras|total|fall of wickets)/i.test(line)) continue;
+  for (const rawLine of linesToParseForBowling) {
+    const line = prepareBattingLine(rawLine);
+    if (/^(extras|total|fall of wickets|no bowler)/i.test(line)) continue;
     const m = line.match(bowlingRegex);
     if (!m) continue;
     const name = cleanScorecardName(m[1]);

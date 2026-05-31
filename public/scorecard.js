@@ -175,12 +175,22 @@ btnProcess.addEventListener("click", async () => {
       throw new Error((data && data.message) || "Process failed");
     }
 
+    const parserVer = resp.headers.get("X-Scorecard-Parser-Version");
+    if (!parserVer || Number(parserVer) < 6) {
+      console.warn(
+        "Scorecard API parser version:",
+        parserVer || "missing",
+        "(expected 6+). Restart local server or deploy backend."
+      );
+    }
+
     setOutput(data);
+    const verNote = parserVer ? ` (parser v${parserVer})` : "";
     Swal.fire({
       icon: "success",
       title: "Processed",
-      text: `Generated JSON for ${Array.isArray(data) ? data.length : 0} players.`,
-      timer: 1200,
+      text: `Generated JSON for ${Array.isArray(data) ? data.length : 0} players.${verNote}`,
+      timer: 1800,
       showConfirmButton: false,
     });
   } catch (err) {

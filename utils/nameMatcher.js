@@ -7,6 +7,18 @@ function normalizeName(name) {
     .trim();
 }
 
+/** Strip tags / jersey numbers so PDF names align with DB (Cricheroes). */
+function canonicalPlayerNameForMatch(name) {
+  let s = String(name || "")
+    .replace(/†/g, "")
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  // Trailing squad number e.g. "Arif Wani 56"
+  s = s.replace(/\s+\d{1,3}\s*$/, "").trim();
+  return normalizeName(s);
+}
+
 function getNameTokens(name) {
   const norm = normalizeName(name);
   if (!norm) return { first: "", rest: "" };
@@ -46,13 +58,13 @@ function levenshtein(a, b) {
  * Exact full-name match only (normalized). Use for scorecard PDF → DB linking.
  */
 function findExactPlayerMatch(inputName, dbPlayers) {
-  const needle = normalizeName(inputName);
+  const needle = canonicalPlayerNameForMatch(inputName);
   if (!needle) return { matched: false };
 
   for (const p of dbPlayers || []) {
     const candidateName = typeof p === "string" ? p : p && p.name;
     if (!candidateName) continue;
-    if (normalizeName(candidateName) === needle) {
+    if (canonicalPlayerNameForMatch(candidateName) === needle) {
       return { matched: true, matchedName: candidateName, distance: 0 };
     }
   }
@@ -123,6 +135,7 @@ function findBestPlayerMatchStrict(inputName, dbPlayers) {
 
 module.exports = {
   normalizeName,
+  canonicalPlayerNameForMatch,
   getNameTokens,
   findExactPlayerMatch,
   findBestPlayerMatch,
