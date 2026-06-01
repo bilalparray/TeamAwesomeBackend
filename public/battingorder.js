@@ -1,7 +1,7 @@
 import { AppConstants } from "./appconstants.js";
 
-/** Top 7 by last-four sum, Zahid Bashir at 8, then 9–11 by form. Bump when logic changes. */
-export const BATTING_ORDER_LOGIC_VERSION = 6;
+/** 5 + 3 + 3: top 5 by form; slots 6–8 from old tail (backfill); 9–11 = rest. */
+export const BATTING_ORDER_LOGIC_VERSION = 8;
 
 // Define the variables for holding data
 let initialBattingOrder = [];
@@ -119,18 +119,8 @@ function updateBattingOrderList(order, elementId) {
 
   const verEl = document.getElementById("battingOrderLogicVersion");
   if (verEl && showScores) {
-    verEl.textContent = `Logic v${BATTING_ORDER_LOGIC_VERSION}: positions 1–7 by form, 8 = Zahid Bashir, 9–11 by form`;
+    verEl.textContent = `Logic v${BATTING_ORDER_LOGIC_VERSION}: 1–5 top form | 6–8 old tail (backfill) | 9–11 remaining`;
   }
-}
-
-const ZAHID_BASHIR_MATCH = /^zahid\s+bashir$/i;
-
-function isZahidBashir(playerName) {
-  return ZAHID_BASHIR_MATCH.test(
-    String(playerName || "")
-      .replace(/\([^)]*\)/g, "")
-      .trim()
-  );
 }
 
 function toDbPlayerName(playerName) {
@@ -138,7 +128,26 @@ function toDbPlayerName(playerName) {
   return row ? row.name : playerName;
 }
 
-// Positions 1–7 and 9–11 by form; position 8 is always Zahid Bashir.
+/**
+ * Pick 3 for positions 6–8: start at old slots 11→9, then 8, 7… if already in top 5.
+ * (Option B — backfill from earlier old slots when tail is in top 5.)
+ */
+function pickMiddleThreeFromPreviousOrder(initialOrder, topFive) {
+  const topSet = new Set(topFive);
+  const picked = [];
+  const n = initialOrder.length;
+
+  for (let i = n - 1; i >= 0 && picked.length < 3; i--) {
+    const player = initialOrder[i];
+    if (!topSet.has(player) && !picked.includes(player)) {
+      picked.push(player);
+    }
+  }
+
+  return picked;
+}
+
+// 5 + 3 + 3: top scorers | old tail (backfill) | remaining — each block sorted by last-four.
 function calculateNewBattingOrder() {
   if (initialBattingOrder.length === 0 || playersLastFour.length === 0) {
     console.error(
@@ -147,21 +156,22 @@ function calculateNewBattingOrder() {
     return;
   }
 
-  const zahidInSquad = initialBattingOrder.find((n) => isZahidBashir(n));
-  const withoutZahid = initialBattingOrder.filter((n) => !isZahidBashir(n));
-  const sorted = sortPlayersByLastFour(withoutZahid);
+  const sortedAll = sortPlayersByLastFour(initialBattingOrder);
+  const topFive = sortedAll.slice(0, 5);
+  const middleThree = pickMiddleThreeFromPreviousOrder(
+    initialBattingOrder,
+    topFive
+  );
+  const middleSet = new Set(middleThree);
+  const tailThree = initialBattingOrder.filter(
+    (p) => !topFive.includes(p) && !middleSet.has(p)
+  );
 
-  if (!zahidInSquad) {
-    newBattingOrder = sorted.map(toDbPlayerName);
-  } else {
-    const topSeven = sorted.slice(0, 7).map(toDbPlayerName);
-    const fromNine = sorted.slice(7).map(toDbPlayerName);
-    newBattingOrder = [
-      ...topSeven,
-      toDbPlayerName(zahidInSquad),
-      ...fromNine,
-    ];
-  }
+  newBattingOrder = [
+    ...topFive,
+    ...sortPlayersByLastFour(middleThree),
+    ...sortPlayersByLastFour(tailThree),
+  ].map(toDbPlayerName);
 
   battingOrderWithScores = calculateScores(newBattingOrder);
 
