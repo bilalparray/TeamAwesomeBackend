@@ -1,5 +1,8 @@
 import { AppConstants } from "./appconstants.js";
 
+/** Top 7 by last-four sum, Zahid Bashir at 8, then 9–11 by form. Bump when logic changes. */
+export const BATTING_ORDER_LOGIC_VERSION = 6;
+
 // Define the variables for holding data
 let initialBattingOrder = [];
 let playersLastFour = [];
@@ -85,18 +88,57 @@ function hideLoader() {
 // Function to update the batting order list in the HTML
 function updateBattingOrderList(order, elementId) {
   const listElement = document.getElementById(elementId);
-  listElement.innerHTML = ""; // Clear any existing content
+  listElement.innerHTML = "";
 
-  order.forEach((player) => {
+  const showScores = elementId === "newBattingOrderList" && battingOrderWithScores.length;
+
+  order.forEach((player, index) => {
     const row = document.createElement("tr");
-    const cell = document.createElement("td");
-    cell.textContent = player;
-    row.appendChild(cell);
+    if (showScores) {
+      const pos = document.createElement("td");
+      pos.className = "text-center";
+      pos.textContent = String(index + 1);
+      row.appendChild(pos);
+
+      const nameCell = document.createElement("td");
+      nameCell.textContent = player;
+      row.appendChild(nameCell);
+
+      const scoreCell = document.createElement("td");
+      scoreCell.className = "text-end";
+      const rowScore = battingOrderWithScores.find((r) => r.name === player);
+      scoreCell.textContent = rowScore ? String(rowScore.totalScore) : "—";
+      row.appendChild(scoreCell);
+    } else {
+      const cell = document.createElement("td");
+      cell.textContent = player;
+      row.appendChild(cell);
+    }
     listElement.appendChild(row);
   });
+
+  const verEl = document.getElementById("battingOrderLogicVersion");
+  if (verEl && showScores) {
+    verEl.textContent = `Logic v${BATTING_ORDER_LOGIC_VERSION}: positions 1–7 by form, 8 = Zahid Bashir, 9–11 by form`;
+  }
 }
 
-// Function to calculate the new batting order
+const ZAHID_BASHIR_MATCH = /^zahid\s+bashir$/i;
+
+function isZahidBashir(playerName) {
+  return ZAHID_BASHIR_MATCH.test(
+    String(playerName || "")
+      .replace(/\([^)]*\)/g, "")
+      .trim()
+  );
+}
+
+function toDbPlayerName(playerName) {
+  const row = findPlayerLastFour(playerName);
+  return row ? row.name : playerName;
+}
+
+// Positions 1–7 and 9–11 by form; position 8 is always Zahid Bashir.
 function calculateNewBattingOrder() {
   if (initialBattingOrder.length === 0 || playersLastFour.length === 0) {
     console.error(
@@ -105,21 +147,21 @@ function calculateNewBattingOrder() {
     return;
   }
 
-  const sortedInitialOrder = sortPlayersByLastFour(initialBattingOrder);
-  const { topFive, lastThreeFromInitial } =
-    getTopAndLastPlayers(sortedInitialOrder);
-  const remainingPlayers = getRemainingPlayers(
-    sortedInitialOrder,
-    topFive,
-    lastThreeFromInitial
-  );
+  const zahidInSquad = initialBattingOrder.find((n) => isZahidBashir(n));
+  const withoutZahid = initialBattingOrder.filter((n) => !isZahidBashir(n));
+  const sorted = sortPlayersByLastFour(withoutZahid);
 
-  let sorted8Players = sortPlayersByLastFour([
-    ...topFive,
-    ...lastThreeFromInitial,
-  ]);
-
-  newBattingOrder = [...sorted8Players, ...remainingPlayers];
+  if (!zahidInSquad) {
+    newBattingOrder = sorted.map(toDbPlayerName);
+  } else {
+    const topSeven = sorted.slice(0, 7).map(toDbPlayerName);
+    const fromNine = sorted.slice(7).map(toDbPlayerName);
+    newBattingOrder = [
+      ...topSeven,
+      toDbPlayerName(zahidInSquad),
+      ...fromNine,
+    ];
+  }
 
   battingOrderWithScores = calculateScores(newBattingOrder);
 
@@ -135,36 +177,17 @@ function sortPlayersByLastFour(order) {
   });
 }
 
-// Helper function to get the top five and last three players
-function getTopAndLastPlayers(sortedOrder) {
-  const topFive = sortedOrder.slice(0, 5);
-  const lastThreeFromInitial = initialBattingOrder
-    .slice(8, 11)
-    .filter((player) => !topFive.includes(player));
-
-  const remainingPlayers = getRemainingPlayers(
-    sortedOrder,
-    topFive,
-    lastThreeFromInitial
-  );
-  while (lastThreeFromInitial.length < 3 && remainingPlayers.length > 0) {
-    lastThreeFromInitial.push(remainingPlayers.shift());
-  }
-
-  return { topFive, lastThreeFromInitial };
-}
-
-// Helper function to get remaining players
-function getRemainingPlayers(order, topFive, lastThree) {
-  return order.filter(
-    (player) => !topFive.includes(player) && !lastThree.includes(player)
+function findPlayerLastFour(playerName) {
+  const key = String(playerName || "").toLowerCase().trim();
+  return playersLastFour.find(
+    (p) => String(p.name || "").toLowerCase().trim() === key
   );
 }
 
 // Helper function to calculate scores
 function calculateScores(order) {
   return order.map((player) => {
-    const playerData = playersLastFour.find((p) => p.name === player);
+    const playerData = findPlayerLastFour(player);
     const totalScore = playerData
       ? playerData.lastfour.reduce((acc, score) => acc + score, 0)
       : 0;
@@ -177,9 +200,8 @@ function calculateScores(order) {
 
 // Helper function to get last four score sum
 function getLastFourSum(playerName) {
-  const lastfour =
-    playersLastFour.find((player) => player.name === playerName)?.lastfour ||
-    [];
+  const row = findPlayerLastFour(playerName);
+  const lastfour = row ? row.lastfour : [];
   return lastfour.reduce((acc, score) => acc + score, 0);
 }
 

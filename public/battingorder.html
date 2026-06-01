@@ -77,10 +77,13 @@
       <!-- New Batting Order Column -->
       <div class="col-md-6">
         <h3 class="text-center">New Batting Order</h3>
+        <p id="battingOrderLogicVersion" class="text-center text-muted small mb-2"></p>
         <table class="table table-bordered">
           <thead>
             <tr>
-              <th class="text-center">Player</th>
+              <th class="text-center" style="width: 3rem">#</th>
+              <th>Player</th>
+              <th class="text-end">Last-four sum</th>
             </tr>
           </thead>
           <tbody id="newBattingOrderList">
@@ -111,7 +114,7 @@
   <!-- SweetAlert JS -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <!-- Your JavaScript File -->
-  <script type="module" src="battingorder.js"></script>
+  <script type="module" src="battingorder.js?v=6"></script>
 </body>
 
 </html>
