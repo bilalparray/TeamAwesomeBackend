@@ -176,11 +176,11 @@ btnProcess.addEventListener("click", async () => {
     }
 
     const parserVer = resp.headers.get("X-Scorecard-Parser-Version");
-    if (!parserVer || Number(parserVer) < 6) {
+    if (!parserVer || Number(parserVer) < 7) {
       console.warn(
         "Scorecard API parser version:",
         parserVer || "missing",
-        "(expected 6+). Restart local server or deploy backend."
+        "(expected 7+). Restart local server or deploy backend."
       );
     }
 

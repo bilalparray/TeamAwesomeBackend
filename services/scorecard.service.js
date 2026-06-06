@@ -7,15 +7,65 @@ async function extractTextUsingV2(pdfBuffer) {
     throw new TypeError("pdf-parse PDFParse class not found");
   }
 
-  // pdf-parse@2.x expects an options object in some builds (otherwise it may
-  // crash reading e.g. options.verbosity).
   const parser = new PDFParse({ data: pdfBuffer, verbosity: 0 });
   try {
     await parser.load();
-    const textResult = await parser.getText();
-    // getText() typically returns { text, pages, ... }
+    const textResult = await parser.getText({
+      cellSeparator: " ",
+      lineEnforce: true,
+    });
     if (typeof textResult === "string") return textResult;
     return textResult && textResult.text ? String(textResult.text) : "";
+  } finally {
+    try {
+      parser.destroy();
+    } catch {
+      // ignore
+    }
+  }
+}
+
+/**
+ * Extract plain text plus table rows (Cricheroes scorecards are often tabular).
+ */
+async function extractPdfContent(pdfBuffer) {
+  const PDFParse = pdfParseImport && pdfParseImport.PDFParse;
+  if (typeof PDFParse !== "function") {
+    return { text: await extractTextUsingV1(pdfBuffer), tableRows: [] };
+  }
+
+  const parser = new PDFParse({ data: pdfBuffer, verbosity: 0 });
+  try {
+    await parser.load();
+    const textResult = await parser.getText({
+      cellSeparator: " ",
+      lineEnforce: true,
+    });
+    const text =
+      typeof textResult === "string"
+        ? textResult
+        : textResult && textResult.text
+        ? String(textResult.text)
+        : "";
+
+    const tableRows = [];
+    try {
+      const tableResult = await parser.getTable();
+      for (const page of tableResult.pages || []) {
+        for (const table of page.tables || []) {
+          if (!Array.isArray(table)) continue;
+          for (const row of table) {
+            if (!Array.isArray(row)) continue;
+            const cells = row.map((c) => String(c ?? "").trim());
+            if (cells.some(Boolean)) tableRows.push(cells);
+          }
+        }
+      }
+    } catch (tableErr) {
+      console.warn("PDF table extraction skipped:", tableErr.message);
+    }
+
+    return { text, tableRows };
   } finally {
     try {
       parser.destroy();
@@ -113,6 +163,177 @@ const BATTING_LINE_REGEX =
   /^(?:\d+\s+)?([A-Za-z][A-Za-z0-9\s.'\-]{1,90}?)\s+((?:not\s+out|c&b|c|lbw|run\s+out|st|retired|b)\b(?:\s+[^\d]+)*?)\s+(\d+)\s+(\d+)(?:\s+\d)/i;
 const BATTING_LINE_SIMPLE_REGEX =
   /^(?:\d+\s+)?([A-Za-z][A-Za-z0-9\s.'\-]{1,90}?)\s+(\d+)\s+(\d+)\b/;
+// Name … optional dismissal … R B (4s 6s SR optional)
+const BATTING_LINE_FLEXIBLE_REGEX =
+  /^(?:\d+\s+)?([A-Za-z][A-Za-z0-9\s.'\-†]{1,90}?)\s+(?:(?:not\s+out|c&b|c|lbw|run\s+out|st|retired|b)\b(?:\s+[^\d]+)?\s+)?(\d+)\s+(\d+)(?:\s+\d|$)/i;
+// When PDF splits columns oddly: name … R B 4s 6s
+const BATTING_LINE_TRAILING_STATS_REGEX =
+  /^(?:\d+\s+)?([A-Za-z][A-Za-z0-9\s.'\-†]{1,90}?)\b.*?(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/i;
+
+function isHeaderOrMetaLine(line) {
+  return /^(extras|total|fall of wickets|no batsman|batsman|bowler|#|r\b|b\b|4s|6s|sr|how out|did not bat|to bat)/i.test(
+    line
+  );
+}
+
+function upsertBattingEntry(batting, entry) {
+  if (!entry || !entry.playerName) return;
+  const name = entry.playerName;
+  const existing = batting.get(name);
+  if (!existing) {
+    batting.set(name, entry);
+    return;
+  }
+  const existingScore = (existing.runsScored || 0) + (existing.balls || 0);
+  const newScore = (entry.runsScored || 0) + (entry.balls || 0);
+  if (newScore > existingScore) {
+    batting.set(name, entry);
+  }
+}
+
+function parseBattingLineFromText(rawLine) {
+  const line = prepareBattingLine(rawLine);
+  if (!line || isHeaderOrMetaLine(line)) return null;
+
+  let m = line.match(BATTING_LINE_REGEX);
+  if (m) {
+    const dismissal = String(m[2] || "").trim();
+    return {
+      playerName: cleanScorecardName(m[1]),
+      runsScored: Number.isFinite(parseInt(m[3], 10)) ? parseInt(m[3], 10) : 0,
+      balls: Number.isFinite(parseInt(m[4], 10)) ? parseInt(m[4], 10) : 0,
+      isNotOut: isDismissalNotOut(dismissal),
+      didNotBat: false,
+    };
+  }
+
+  m = line.match(BATTING_LINE_SIMPLE_REGEX);
+  if (m) {
+    const name = cleanScorecardName(m[1]);
+    if (isHeaderOrMetaLine(name)) return null;
+    return {
+      playerName: name,
+      runsScored: Number.isFinite(parseInt(m[2], 10)) ? parseInt(m[2], 10) : 0,
+      balls: Number.isFinite(parseInt(m[3], 10)) ? parseInt(m[3], 10) : 0,
+      isNotOut: /\bnot\s+out\b/i.test(line),
+      didNotBat: false,
+    };
+  }
+
+  m = line.match(BATTING_LINE_FLEXIBLE_REGEX);
+  if (m) {
+    return {
+      playerName: cleanScorecardName(m[1]),
+      runsScored: Number.isFinite(parseInt(m[2], 10)) ? parseInt(m[2], 10) : 0,
+      balls: Number.isFinite(parseInt(m[3], 10)) ? parseInt(m[3], 10) : 0,
+      isNotOut: /\bnot\s+out\b/i.test(line),
+      didNotBat: false,
+    };
+  }
+
+  m = line.match(BATTING_LINE_TRAILING_STATS_REGEX);
+  if (m) {
+    const name = cleanScorecardName(m[1]);
+    if (isHeaderOrMetaLine(name)) return null;
+    return {
+      playerName: name,
+      runsScored: Number.isFinite(parseInt(m[2], 10)) ? parseInt(m[2], 10) : 0,
+      balls: Number.isFinite(parseInt(m[3], 10)) ? parseInt(m[3], 10) : 0,
+      isNotOut: /\bnot\s+out\b/i.test(line),
+      didNotBat: false,
+    };
+  }
+
+  return null;
+}
+
+function parseBattingFromTableRow(cells) {
+  const parts = (cells || []).map((c) => String(c ?? "").trim());
+  if (parts.length < 3) return null;
+
+  const joined = parts.join(" ");
+  if (isHeaderOrMetaLine(joined)) return null;
+
+  const fromText = parseBattingLineFromText(joined);
+  if (fromText) return fromText;
+
+  let start = 0;
+  if (/^\d+$/.test(parts[0])) start = 1;
+
+  let nameIdx = -1;
+  for (let i = start; i < parts.length; i++) {
+    if (/^[A-Za-z]/.test(parts[i]) && !isHeaderOrMetaLine(parts[i])) {
+      nameIdx = i;
+      break;
+    }
+  }
+  if (nameIdx === -1) return null;
+
+  const name = cleanScorecardName(parts[nameIdx]);
+  if (!name || isHeaderOrMetaLine(name)) return null;
+
+  const afterName = parts.slice(nameIdx + 1);
+  const dismissal = afterName.filter((x) => x && !/^\d+$/.test(x)).join(" ");
+  const numericCells = afterName
+    .filter((x) => x !== "" && /^\d+$/.test(x))
+    .map((x) => parseInt(x, 10));
+  if (numericCells.length < 2) return null;
+
+  return {
+    playerName: name,
+    runsScored: numericCells[0],
+    balls: numericCells[1],
+    isNotOut: isDismissalNotOut(dismissal) || /\bnot\s+out\b/i.test(dismissal),
+    didNotBat: false,
+  };
+}
+
+function expandLinesForParsing(lines) {
+  const expanded = [];
+  const seen = new Set();
+  const add = (value) => {
+    const line = prepareBattingLine(value);
+    if (!line || seen.has(line)) return;
+    seen.add(line);
+    expanded.push(line);
+  };
+
+  for (const rawLine of lines || []) {
+    add(rawLine);
+  }
+  for (let i = 0; i < (lines || []).length; i++) {
+    for (let span = 2; span <= 4; span++) {
+      if (i + span > lines.length) break;
+      const merged = lines
+        .slice(i, i + span)
+        .map((l) => String(l || "").trim())
+        .filter(Boolean)
+        .join(" ");
+      add(merged);
+    }
+  }
+
+  return expanded;
+}
+
+function parseBattingLinesIntoMap(lines, batting) {
+  for (const line of expandLinesForParsing(lines)) {
+    const parsed = parseBattingLineFromText(line);
+    if (parsed) upsertBattingEntry(batting, parsed);
+  }
+}
+
+function parseBattingTablesIntoMap(tableRows, batting, dbPlayerNames = []) {
+  for (const row of tableRows || []) {
+    const parsed = parseBattingFromTableRow(row);
+    if (!parsed) continue;
+    if (dbPlayerNames.length) {
+      const match = findExactPlayerMatch(parsed.playerName, dbPlayerNames);
+      if (!match.matched) continue;
+    }
+    upsertBattingEntry(batting, parsed);
+  }
+}
 
 /** Map each bowling PDF row to one DB player (exact name match only). */
 function buildWicketsByDbName(bowlingRaw, dbPlayerNames) {
@@ -236,20 +457,10 @@ function extractNonBattingNamesFromLines(lines) {
 function extractBattingNamesFromLines(lines) {
   const names = new Set();
 
-  for (const rawLine of lines || []) {
-    const line = prepareBattingLine(rawLine);
-    if (/^(extras|total|fall of wickets|no batsman)/i.test(line)) continue;
-
-    let m = line.match(BATTING_LINE_REGEX);
-    if (m) {
-      const cleaned = cleanScorecardName(m[1]);
-      if (cleaned) names.add(cleaned);
-      continue;
-    }
-    m = line.match(BATTING_LINE_SIMPLE_REGEX);
-    if (m) {
-      const n = cleanScorecardName(m[1]);
-      if (!/^(extras|total|fall of wickets)/i.test(n)) names.add(n);
+  for (const line of expandLinesForParsing(lines)) {
+    const parsed = parseBattingLineFromText(line);
+    if (parsed && parsed.playerName) {
+      names.add(parsed.playerName);
     }
   }
 
@@ -349,10 +560,15 @@ function pickMyTeamBlocks(allLines, dbPlayerNames) {
  * Designed to be easy to tweak as formats vary.
  */
 async function extractPlayerNamesFromPdf(pdfBuffer, dbPlayerNames = []) {
-  const text = await extractTextFromPdf(pdfBuffer);
+  const { text, tableRows } = await extractPdfContent(pdfBuffer);
   const allLines = textToLines(text);
   const { battingBlock } = pickMyTeamBlocks(allLines, dbPlayerNames);
   const extracted = extractBattingNamesFromLines(battingBlock.lines);
+
+  for (const row of tableRows) {
+    const parsed = parseBattingFromTableRow(row);
+    if (parsed && parsed.playerName) extracted.push(parsed.playerName);
+  }
 
   // Return only players that match DB (opposition ignored)
   const out = [];
@@ -374,10 +590,10 @@ async function extractPlayerNamesFromPdf(pdfBuffer, dbPlayerNames = []) {
  * Parse batting + bowling into per-player stats.
  * Output is "raw stats" (no late/notout adjustments or DB matching yet).
  */
-const SCORECARD_PARSER_VERSION = 6;
+const SCORECARD_PARSER_VERSION = 7;
 
 async function parseScorecard(pdfBuffer, dbPlayerNames = [], options = {}) {
-  const text = await extractTextFromPdf(pdfBuffer);
+  const { text, tableRows } = await extractPdfContent(pdfBuffer);
   const allLines = textToLines(text);
   const { battingBlock, bowlingBlock } = pickMyTeamBlocks(allLines, dbPlayerNames);
   const teamLines = battingBlock.lines;
@@ -390,45 +606,9 @@ async function parseScorecard(pdfBuffer, dbPlayerNames = [], options = {}) {
   for (const p of extractNonBattingNamesFromLines(teamLines)) didNotBat.add(p);
 
   const battingRegex = BATTING_LINE_REGEX;
-  const battingRegexSimple = BATTING_LINE_SIMPLE_REGEX;
 
-  for (const rawLine of teamLines) {
-    const line = prepareBattingLine(rawLine);
-    // skip obvious non-player rows
-    if (/^(extras|total|fall of wickets|no batsman)/i.test(line)) continue;
-
-    let m = line.match(battingRegex);
-    if (m) {
-      const name = cleanScorecardName(m[1]);
-      const dismissal = String(m[2] || "").trim();
-      const runsScored = parseInt(m[3], 10);
-      const balls = parseInt(m[4], 10);
-      const isNotOut = isDismissalNotOut(dismissal);
-      batting.set(name, {
-        playerName: name,
-        runsScored: Number.isFinite(runsScored) ? runsScored : 0,
-        balls: Number.isFinite(balls) ? balls : 0,
-        isNotOut: isNotOut,
-        didNotBat: false,
-      });
-      continue;
-    }
-
-    m = line.match(battingRegexSimple);
-    if (m) {
-      const name = cleanScorecardName(m[1]);
-      if (/^(extras|total|fall of wickets)/i.test(name)) continue;
-      const runsScored = parseInt(m[2], 10);
-      const balls = parseInt(m[3], 10);
-      batting.set(name, {
-        playerName: name,
-        runsScored: Number.isFinite(runsScored) ? runsScored : 0,
-        balls: Number.isFinite(balls) ? balls : 0,
-        isNotOut: false,
-        didNotBat: false,
-      });
-    }
-  }
+  parseBattingLinesIntoMap(teamLines, batting);
+  parseBattingTablesIntoMap(tableRows, batting, dbPlayerNames);
 
   // apply DNB as "isNotOut: true" per requirement
   for (const name of didNotBat) {
@@ -450,7 +630,7 @@ async function parseScorecard(pdfBuffer, dbPlayerNames = [], options = {}) {
     /^(?:\d+\s+)?([A-Za-z][A-Za-z\s.'\-()†]{1,90})\s+(\d+(?:\.\d+)?)\s+(\d+)\s+(\d+)\s+(\d+)\b/;
   const linesToParseForBowling = selectBowlingLines(battingBlock, bowlingBlock);
 
-  for (const rawLine of linesToParseForBowling) {
+  for (const rawLine of expandLinesForParsing(linesToParseForBowling)) {
     const line = prepareBattingLine(rawLine);
     if (/^(extras|total|fall of wickets|no bowler)/i.test(line)) continue;
     const m = line.match(bowlingRegex);
@@ -496,6 +676,14 @@ async function parseScorecard(pdfBuffer, dbPlayerNames = [], options = {}) {
       parserVersion: SCORECARD_PARSER_VERSION,
       sameBattingBowlingBlock: blocksAreSame(battingBlock, bowlingBlock),
       bowlingLinesParsed: linesToParseForBowling.length,
+      tableRowsParsed: tableRows.length,
+      battingParsedCount: batting.size,
+      battingRaw: Object.fromEntries(
+        Array.from(batting.entries()).map(([k, v]) => [
+          k,
+          { runs: v.runsScored, balls: v.balls, isNotOut: v.isNotOut },
+        ])
+      ),
       bowlingRaw: Object.fromEntries(
         Array.from(bowlingRaw.entries()).map(([k, v]) => [k, v.wickets])
       ),
