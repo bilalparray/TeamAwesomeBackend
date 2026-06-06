@@ -6,6 +6,7 @@ const sharp = require("sharp");
 const routes = require("./Routes/routes");
 const scorecardRoutes = require("./Routes/scorecard.routes");
 const mateTurnRoutes = require("./Routes/mateTurn.routes");
+const adminRoutes = require("./Routes/admin.routes");
 const app = express();
 const port = process.env.PORT || 3000;
 require("dotenv").config({
@@ -27,6 +28,7 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/", routes);
 app.use("/api/scorecard", scorecardRoutes);
 app.use("/api", mateTurnRoutes);
+app.use("/api", adminRoutes);
 // Start server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
