@@ -52,6 +52,9 @@ router.get("/addmatch", (req, res) => {
 router.get("/scorecard", (req, res) => {
   res.sendFile(path.join(__dirname, "..", "public", "scorecard.html"));
 });
+router.get("/mateturn", (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "public", "mateturn.html"));
+});
 // Get data for a player by ID
 
 router.get("/api/data/:playerId", async (req, res) => {
