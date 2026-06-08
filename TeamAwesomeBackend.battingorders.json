@@ -1,21 +1,19 @@
-[
-  {
-    "_id": {
-      "$oid": "66bc36585c9ae1f4be4c8710"
-    },
-    "__v": 36,
-    "order": [
-      "Owais Farooq",
-      "Sahil Parray",
-      "Bilal Parray",
-      "Muzamil Bhat",
-      "Ubi Obaid",
-      "Suhail Parray",
-      "Liyaqat Bhat",
-      "Showkat Parray",
-      "Ehsaan ul Haq",
-      "Zahid Bashir",
-      "Ishtiyaq Ayoub"
-    ]
-  }
-]
+[{
+  "_id": {
+    "$oid": "66bc36585c9ae1f4be4c8710"
+  },
+  "__v": 37,
+  "order": [
+    "Bilal Parray",
+    "Ubi Obaid",
+    "SP",
+    "Ishtiyaq Ayoub",
+    "Ehsaan Ul Haq",
+    "Liyaqat Bhat",
+    "Muzamil Bhat",
+    "Zahid Bashir",
+    "Owais Farooq",
+    "Showkat Parray",
+    "Sahil Parray"
+  ]
+}]
