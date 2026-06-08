@@ -4,7 +4,10 @@ const {
   parseScorecard,
   SCORECARD_PARSER_VERSION,
 } = require("../services/scorecard.service");
-const { calculateAdjustedRuns } = require("../utils/scoreCalculator");
+const {
+  calculateAdjustedRuns,
+  appendToLastFour,
+} = require("../utils/scoreCalculator");
 const { findExactPlayerMatch, normalizeName } = require("../utils/nameMatcher");
 
 function parseLatePlayersField(latePlayersRaw) {
@@ -202,9 +205,8 @@ async function applyScorecardToDb(req, res) {
       dbPlayer.scores.career.balls.push(normalizedBalls);
       dbPlayer.scores.career.wickets.push(normalizedWickets);
 
-      // Maintain latest 4 innings scores in lastfour
-      dbPlayer.scores.lastfour.push(runs);
-      dbPlayer.scores.lastfour = dbPlayer.scores.lastfour.slice(-4);
+      // lastfour: build up to 4, then reset to only the new score on the 5th
+      dbPlayer.scores.lastfour = appendToLastFour(dbPlayer.scores.lastfour, runs);
 
       await dbPlayer.save();
 

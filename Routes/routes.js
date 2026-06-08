@@ -6,6 +6,7 @@ const NextMatch = require("../models/NextMatchSchema");
 const AppInfo = require("../models/AppInfoSchema");
 const sharp = require("sharp");
 const path = require("path");
+const { appendToLastFour } = require("../utils/scoreCalculator");
 
 function parseFiniteNumber(value) {
   const parsed = Number(value);
@@ -196,17 +197,13 @@ router.put("/api/data/:playerId", async (req, res) => {
       return res.status(404).json({ message: "Player not found" });
     }
 
-    // Update lastfour array directly with runs if provided
+    // Update lastfour from runs (resets to new score only when block already has 4)
     if (normalizedRuns) {
       const runValues = normalizedRuns.values;
-      // Update lastfour array
-      if (player.scores.lastfour.length >= 4) {
-        player.scores.lastfour = runValues.slice(0, 4); // Replace with the first 4 elements of runs
-      } else {
-        player.scores.lastfour.push(...runValues);
-        // Trim the lastfour array to maintain only the latest 4 entries
-        player.scores.lastfour = player.scores.lastfour.slice(-4);
-      }
+      player.scores.lastfour = appendToLastFour(
+        player.scores.lastfour,
+        runValues
+      );
 
       // Append runs to runs and career's runs arrays
       player.scores.runs.push(...runValues);
