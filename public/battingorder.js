@@ -1,7 +1,7 @@
 import { AppConstants } from "./appconstants.js";
 
-/** 5 + 3 + 3: top 5 by form; slots 6–8 from old tail (backfill); 9–11 = rest. */
-export const BATTING_ORDER_LOGIC_VERSION = 8;
+/** Top 5 + old #9–11 (fill to 8 if overlap) → sort 1–8; rest sort 9–11. */
+export const BATTING_ORDER_LOGIC_VERSION = 11;
 
 // Define the variables for holding data
 let initialBattingOrder = [];
@@ -119,7 +119,7 @@ function updateBattingOrderList(order, elementId) {
 
   const verEl = document.getElementById("battingOrderLogicVersion");
   if (verEl && showScores) {
-    verEl.textContent = `Logic v${BATTING_ORDER_LOGIC_VERSION}: 1–5 top form | 6–8 old tail (backfill) | 9–11 remaining`;
+    verEl.textContent = `Logic v${BATTING_ORDER_LOGIC_VERSION}: slots 1–8 = top 5 + old #9–11 (sorted by form) | 9–11 = rest sorted`;
   }
 }
 
@@ -128,26 +128,19 @@ function toDbPlayerName(playerName) {
   return row ? row.name : playerName;
 }
 
-/**
- * Pick 3 for positions 6–8: start at old slots 11→9, then 8, 7… if already in top 5.
- * (Option B — backfill from earlier old slots when tail is in top 5.)
- */
-function pickMiddleThreeFromPreviousOrder(initialOrder, topFive) {
-  const topSet = new Set(topFive);
-  const picked = [];
-  const n = initialOrder.length;
+/** Build exactly 8 players: top 5 + old #9–11; if overlap, add next-best scorers. */
+function buildFirstEightPool(sortedAll, topFive, oldSlotsNineTenEleven) {
+  const pool = new Set([...topFive, ...oldSlotsNineTenEleven]);
 
-  for (let i = n - 1; i >= 0 && picked.length < 3; i--) {
-    const player = initialOrder[i];
-    if (!topSet.has(player) && !picked.includes(player)) {
-      picked.push(player);
-    }
+  for (const player of sortedAll) {
+    if (pool.size >= 8) break;
+    if (!pool.has(player)) pool.add(player);
   }
 
-  return picked;
+  return sortPlayersByLastFour([...pool]).slice(0, 8);
 }
 
-// 5 + 3 + 3: top scorers | old tail (backfill) | remaining — each block sorted by last-four.
+// Top 5 + previous #9–11 → fill to 8 → sort (positions 1–8); remaining 3 sorted (9–11).
 function calculateNewBattingOrder() {
   if (initialBattingOrder.length === 0 || playersLastFour.length === 0) {
     console.error(
@@ -158,19 +151,19 @@ function calculateNewBattingOrder() {
 
   const sortedAll = sortPlayersByLastFour(initialBattingOrder);
   const topFive = sortedAll.slice(0, 5);
-  const middleThree = pickMiddleThreeFromPreviousOrder(
-    initialBattingOrder,
-    topFive
+  const oldSlotsNineTenEleven = initialBattingOrder.slice(8, 11);
+
+  const firstEight = buildFirstEightPool(
+    sortedAll,
+    topFive,
+    oldSlotsNineTenEleven
   );
-  const middleSet = new Set(middleThree);
-  const tailThree = initialBattingOrder.filter(
-    (p) => !topFive.includes(p) && !middleSet.has(p)
-  );
+  const firstEightSet = new Set(firstEight);
+  const tail = initialBattingOrder.filter((p) => !firstEightSet.has(p));
 
   newBattingOrder = [
-    ...topFive,
-    ...sortPlayersByLastFour(middleThree),
-    ...sortPlayersByLastFour(tailThree),
+    ...firstEight,
+    ...sortPlayersByLastFour(tail),
   ].map(toDbPlayerName);
 
   battingOrderWithScores = calculateScores(newBattingOrder);
