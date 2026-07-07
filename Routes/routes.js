@@ -323,14 +323,20 @@ router.put("/api/update/:playerId", async (req, res) => {
 // Endpoint to get the application update information
 router.get("/api/updateapp", async (req, res) => {
   try {
-    const appInfo = await AppInfo.findOne();
+    const appInfo = await AppInfo.findOne().lean();
     if (appInfo) {
-      res.json(appInfo);
+      res.status(200).json({
+        minimumVersion: appInfo.minimumVersion || "",
+        isError: appInfo.isError === true,
+      });
     } else {
-      res.status(404).send("No update information found.");
+      res.status(200).json({
+        minimumVersion: "",
+        isError: false,
+      });
     }
   } catch (error) {
-    res.status(500).send("Error retrieving update information.");
+    res.status(500).json({ message: "Error retrieving update information." });
   }
 });
 // man of the match

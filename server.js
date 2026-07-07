@@ -8,6 +8,7 @@ const scorecardRoutes = require("./Routes/scorecard.routes");
 const mateTurnRoutes = require("./Routes/mateTurn.routes");
 const adminRoutes = require("./Routes/admin.routes");
 const teamRulesRoutes = require("./Routes/teamRules.routes");
+const appInfoRoutes = require("./Routes/appInfo.routes");
 const app = express();
 const port = process.env.PORT || 3000;
 require("dotenv").config({
@@ -31,6 +32,7 @@ app.use("/api/scorecard", scorecardRoutes);
 app.use("/api", mateTurnRoutes);
 app.use("/api", adminRoutes);
 app.use("/api", teamRulesRoutes);
+app.use("/api", appInfoRoutes);
 // Start server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
