@@ -14,6 +14,9 @@ const port = process.env.PORT || 3000;
 require("dotenv").config({
   path: path.join(__dirname, "process.env"),
 });
+const dns = require("dns");
+
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
 const cors = require("cors");
 // Increase the request body size limit
 app.use(bodyParser.json({ limit: "500kb" }));
